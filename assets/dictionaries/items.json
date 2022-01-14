@@ -1,0 +1,26 @@
+[
+    {
+        "name" : "coal",
+        "texture" : "textures/items/coal.png"
+    },
+    {
+        "name" : "copper",
+        "texture" : "textures/items/copper.png"
+    },
+    {
+        "name" : "diamond",
+        "texture" : "textures/items/diamond.png"
+    },
+    {
+        "name" : "gold",
+        "texture" : "textures/items/gold.png"
+    },
+    {
+        "name" : "iron",
+        "texture" : "textures/items/iron.png"
+    },
+    {
+        "name" : "uranium",
+        "texture" : "textures/items/uranium.png"
+    }
+]

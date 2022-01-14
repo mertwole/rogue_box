@@ -1,0 +1,14 @@
+{
+    "recyclers" : [
+        {
+            "name" : "iron miner",
+            "texture" : "textures/buildings/building.png",
+            "period" : 10,
+
+            "items" : {
+                "input" : [ ],
+                "output" : [ { "item" : "iron", "amount" : 1 } ]
+            }
+        }
+    ]   
+}
