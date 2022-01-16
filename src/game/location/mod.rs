@@ -5,8 +5,9 @@ use crate::common::asset_manager::{AssetManager, AssetId};
 use crate::common::math::{Vec2, IVec2};
 use crate::game::renderer::{Renderer, Sprite};
 
-use crate::game::building::transport_belt::{TransportBelt, transport_belt_manager::TransportBeltManager};
-use crate::game::building::*;
+use crate::game::building::transport_belt::{TransportBelt, TransportedItem};
+use crate::game::resource::item::{Item, ItemFactory};
+
 use crate::common::direction::Direction;
 
 pub mod cell;
@@ -21,6 +22,10 @@ pub struct Location {
 impl Location {
     pub fn new(asset_manager : &AssetManager) -> Location {
         let mut field = Field::new(IVec2::new(-10, -10), IVec2::new(10, 10));
+
+        let items_dict = AssetManager::get_asset_id("dictionaries/items.json");
+        let item_factory = ItemFactory::new(asset_manager.get_json(items_dict));
+
         // DEBUG RECYCLER
         let json_asset = AssetManager::get_asset_id("dictionaries/recyclers.json");
         let json = asset_manager.get_json(json_asset);
@@ -30,9 +35,7 @@ impl Location {
         let recycler = crate::game::building::recycler::Recycler::from_json_object(&recyclers[0]);
 
         let cell = field.get_cell_mut(IVec2::new(0, 0)).unwrap();
-        cell.build(Rc::from(recycler));
-        // DEBUG TRANSPORT BELT MANAGER
-        let mut tb_manager = TransportBeltManager::new();
+        cell.build(Box::from(recycler));
         // DEBUG TRANSPORT BELT
         let json_asset = AssetManager::get_asset_id("dictionaries/transport_belts.json");
         let json = asset_manager.get_json(json_asset);
@@ -41,15 +44,15 @@ impl Location {
         let tbs = crate::common::json_reader::JsonReader::read_vec(&tbs, "transport_belts", &mut err);
         let mut tb = TransportBelt::from_json_object(&tbs[0]);
             // setup
-        tb.inputs = vec![Direction::Left];
-        tb.output = Direction::Right;
+        tb.set_config(vec![Direction::Left], Direction::Right);
         tb.position = IVec2::new(1, 0);
+        let item_id = ItemFactory::get_item_id_by_name("copper");
+        tb.item_buffers.get_mut(&Direction::Left).unwrap()[0] = Some(TransportedItem::new(item_factory.create_item(item_id)));
+        let item_id = ItemFactory::get_item_id_by_name("copper");
+        tb.item_buffers.get_mut(&Direction::Left).unwrap()[1] = Some(TransportedItem::new(item_factory.create_item(item_id)));
             // setup 
         let cell = field.get_cell_mut(tb.position).unwrap();
-        let tb_rc = Rc::from(tb);
-        let pos = tb_rc.as_ref().position;
-        tb_manager.add_transport_belt(tb_rc.clone(), pos);
-        cell.build(tb_rc);
+        cell.build(Box::from(tb));
         
         let json_asset = AssetManager::get_asset_id("dictionaries/transport_belts.json");
         let json = asset_manager.get_json(json_asset);
@@ -58,15 +61,11 @@ impl Location {
         let tbs = crate::common::json_reader::JsonReader::read_vec(&tbs, "transport_belts", &mut err);
         let mut tb = TransportBelt::from_json_object(&tbs[0]);
             // setup
-        tb.inputs = vec![Direction::Left];
-        tb.output = Direction::Right;
+        tb.set_config(vec![Direction::Left], Direction::Right);
         tb.position = IVec2::new(2, 0);
             // setup 
         let cell = field.get_cell_mut(tb.position).unwrap();
-        let tb_rc = Rc::from(tb);
-        let pos = tb_rc.as_ref().position;
-        tb_manager.add_transport_belt(tb_rc.clone(), pos);
-        cell.build(tb_rc);
+        cell.build(Box::from(tb));
 
         let json_asset = AssetManager::get_asset_id("dictionaries/transport_belts.json");
         let json = asset_manager.get_json(json_asset);
@@ -75,24 +74,13 @@ impl Location {
         let tbs = crate::common::json_reader::JsonReader::read_vec(&tbs, "transport_belts", &mut err);
         let mut tb = TransportBelt::from_json_object(&tbs[0]);
             // setup
-        tb.inputs = vec![Direction::Left];
-        tb.output = Direction::Right;
+        tb.set_config(vec![Direction::Left], Direction::Right);
         tb.position = IVec2::new(3, 0);
             // setup 
         let cell = field.get_cell_mut(tb.position).unwrap();
-        let tb_rc = Rc::from(tb);
-        let pos = tb_rc.as_ref().position;
-        tb_manager.add_transport_belt(tb_rc.clone(), pos);
-        cell.build(tb_rc);
+        cell.build(Box::from(tb));
 
-        let mut tick_order = tb_manager.get_tick_order();
-        loop {
-            match tick_order.next() {
-                Some(pos) => { print!("({}, {}) -> ", pos.x, pos.y); }
-                None => { println!("end"); break; }
-            }
-        }
-
+         
         Location { field }
     }
 }
@@ -102,8 +90,10 @@ impl GameEntity for Location {
         self.field.update(delta_time);
     }
 
-    fn tick(&mut self) {
-        self.field.tick();
+    fn tick(&mut self, tick_id : u32) {
+        self.field.message_exchange(tick_id);
+        self.field.tick(tick_id);
+        self.field.message_exchange(tick_id);
     }
 
     fn render(&mut self, renderer : &mut Renderer) {

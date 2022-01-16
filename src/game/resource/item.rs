@@ -28,7 +28,7 @@ impl Item {
         }
     }
 
-    fn from_json_value(value : &serde_json::Value) -> Item {
+    pub fn from_json_value(value : &serde_json::Value) -> Item {
         match value {
             serde_json::Value::Object(item_obj) => {
                 let err_name = &String::from("error");
@@ -74,7 +74,7 @@ impl GameEntity for Item {
 
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self, tick_id : u32) {
 
     }
 

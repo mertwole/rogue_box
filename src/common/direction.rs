@@ -19,4 +19,14 @@ impl Direction {
             Direction::None =>  IVec2::new(0, 0)
         }
     }
+
+    pub fn from_ivec2(vec : IVec2) -> Direction {
+        match vec {
+            IVec2 { x : 0, y : 1 } => { Direction::Up }
+            IVec2 { x : 0, y : -1 } => { Direction::Down }
+            IVec2 { x : 1, y : 0 } => { Direction::Right }
+            IVec2 { x : -1, y : 0 } => { Direction::Left }
+            _ => { Direction::None }
+        } 
+    }
 }

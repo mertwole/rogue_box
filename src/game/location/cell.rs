@@ -10,12 +10,12 @@ use crate::common::math::IVec2;
 pub struct Cell {
     position : IVec2,
     sprite : Sprite,
-    building : Option<Rc<dyn Building>>
+    pub building : Option<Box<dyn Building>>
 }
 
 impl Cell {
     pub fn new(position : IVec2) -> Cell {
-        let texture = AssetManager::get_asset_id("textures/surfaces/grass.png");
+        let texture = AssetManager::get_asset_id("textures/surfaces/stone.png");
         let mut sprite = Sprite::new(texture);
         sprite.position = position.to_vec2();
         Cell {
@@ -25,41 +25,38 @@ impl Cell {
         }
     }
 
-    pub fn build(&mut self, building : Rc<dyn Building>) {
+    pub fn build(&mut self, building : Box<dyn Building>) {
         self.building = Some(building);
     }
 }
 
 impl GameEntity for Cell {
     fn update(&mut self, delta_time : f32) {
-        // match self.building.clone() {
-        //     Some(mut building) => { 
-        //         let building = Rc::get_mut(&mut building).unwrap();
-        //         building.update(delta_time); 
-        //     }
-        //     _ => { }
-        // }
+        match self.building.as_mut() {
+            Some(building) => { 
+                building.update(delta_time); 
+            }
+            _ => { }
+        }
     }
 
-    fn tick(&mut self) {
-        // match self.building.clone() {
-        //     Some(mut building) => { 
-        //         let building = Rc::get_mut(&mut building).unwrap();
-        //         building.tick(); 
-        //     }
-        //     _ => { }
-        // }
+    fn tick(&mut self, tick_id : u32) {
+        match self.building.as_mut() {
+            Some(building) => { 
+                building.tick(tick_id); 
+            }
+            _ => { }
+        }
     }
 
     fn render(&mut self, renderer : &mut Renderer) {
         renderer.queue_render_sprite(&self.sprite);
         
-        // match self.building.clone() {
-        //     Some(mut building) => { 
-        //         let building = Rc::get_mut(&mut building).unwrap();
-        //         building.render(renderer); 
-        //     }
-        //     _ => { }
-        // }
+        match self.building.as_mut() {
+            Some(building) => { 
+                building.render(renderer); 
+            }
+            _ => { }
+        }
     }
 }

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{Building, BuildingClone};
+use super::*;
 
 use crate::game::resource::item::{ItemId, ItemFactory};
 use crate::game::renderer::{Renderer, Sprite};
@@ -102,7 +102,7 @@ impl GameEntity for Recycler {
 
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self, tick_id : u32) {
         if self.can_produce {
             self.from_last_production += 1;
             if self.from_last_production >= self.period {
@@ -165,5 +165,19 @@ impl BuildingClone for Recycler {
 impl Building for Recycler {
     fn get_name(&self) -> &str {
         &self.name
+    }
+}
+
+impl MessageSender for Recycler {
+    fn pull_messages(&mut self) -> Vec<Message> {
+        Vec::new()
+    }
+
+    fn push_back_message(&mut self, message: Message) { }
+}
+
+impl MessageReceiver for Recycler {
+    fn try_push_message(&mut self, message : Message) -> Option<Message> {
+        Some(message)
     }
 }

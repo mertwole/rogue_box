@@ -1,6 +1,7 @@
 use crate::common::math::IVec2;
 use crate::game::game_entity::GameEntity;
 use crate::game::renderer::Renderer;
+use crate::game::message::*;
 
 use super::cell::Cell;
 
@@ -36,6 +37,54 @@ impl Field {
         } 
         None
     }
+
+    pub fn message_exchange(&mut self, tick_id : u32) {
+        let mut message_queue = Vec::new();
+
+        for cell_row in &mut self.cells {
+            for cell in cell_row {
+                match &mut cell.building {
+                    Some(building) => { 
+                        message_queue.extend(building.pull_messages());
+                    }
+                    None => { }
+                }
+            }
+        }
+
+        for message in &mut message_queue { message.tick_id = tick_id; }
+
+        loop {
+            let message = message_queue.pop();
+            if message.is_none() { break; }
+            let message = message.unwrap();
+        
+            let cell = self.get_cell_mut(message.receiver);
+            match cell {
+                Some(cell) => {
+                    match &mut cell.building {
+                        Some(building) => { 
+                            let back_message = building.try_push_message(message);
+                            match back_message {
+                                Some(back_message) => {
+                                    let sender = self.get_cell_mut(back_message.sender).unwrap().building.as_mut().unwrap();
+                                    sender.push_back_message(back_message);
+                                    continue;
+                                }
+                                None => { continue; }
+                            }
+                        }
+                        None => {  }
+                    }
+                }
+                None => {  }
+            }
+
+            let sender = self.get_cell_mut(message.sender).unwrap().building.as_mut().unwrap();
+            sender.push_back_message(message);
+            
+        }
+    }
 }
 
 impl GameEntity for Field {
@@ -47,10 +96,10 @@ impl GameEntity for Field {
         }
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self, tick_id : u32) {
         for cell_row in &mut self.cells {
             for cell in cell_row {
-                cell.tick();
+                cell.tick(tick_id);
             }
         }
     }

@@ -10,13 +10,14 @@ pub mod building;
 pub mod resource;
 pub mod game_entity;
 pub mod renderer;
+pub mod message;
 
 use location::Location;
 use game_entity::*;
 use renderer::{Renderer, camera::Camera};
 use resource::item::*;
 
-const TICK_PERIOD : f32 = 0.1;
+const TICK_PERIOD : f32 = 1.0;
 
 pub struct Game {
     camera : Camera,
@@ -24,9 +25,8 @@ pub struct Game {
     asset_manager : AssetManager,
     location : Location,
 
-    item_factory : ItemFactory,
-
-    from_last_tick : f32
+    from_last_tick : f32,
+    tick_id : u32
 }
 
 impl Game {
@@ -49,11 +49,10 @@ impl Game {
             location, 
             renderer, 
             asset_manager, 
-            camera, 
-
-            item_factory, 
+            camera,  
             
-            from_last_tick : 0.0 
+            from_last_tick : 0.0,
+            tick_id : 0
         }
     }
 
@@ -62,7 +61,8 @@ impl Game {
     }
 
     fn tick_all(&mut self) {
-        self.location.tick();
+        self.location.tick(self.tick_id);
+        self.tick_id += 1;
     } 
 }
 
