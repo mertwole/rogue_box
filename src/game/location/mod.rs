@@ -79,7 +79,6 @@ impl Location {
             // setup 
         let cell = field.get_cell_mut(tb.position).unwrap();
         cell.build(Box::from(tb));
-
          
         Location { field }
     }
@@ -91,9 +90,9 @@ impl GameEntity for Location {
     }
 
     fn tick(&mut self, tick_id : u32) {
-        self.field.message_exchange(tick_id);
         self.field.tick(tick_id);
         self.field.message_exchange(tick_id);
+        self.field.tick(tick_id);
     }
 
     fn render(&mut self, renderer : &mut Renderer) {

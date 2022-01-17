@@ -18,7 +18,7 @@ impl TransportedItem {
     pub fn new(item : Item) -> TransportedItem {
         TransportedItem {
             item,
-            last_tick_moved : 0
+            last_tick_moved : std::u32::MAX
         }
     } 
 }
@@ -76,6 +76,26 @@ impl TransportBelt {
         }
     }
 
+    fn set_item_positions(&mut self) {
+        for dir in self.inputs.iter().chain(iter::once(&self.output)) {
+            let dir_vec = dir.to_ivec2().to_vec2() / (2.0 * self.item_count as f32);
+            let buffer = self.item_buffers.get_mut(&dir).unwrap();
+            for i in 0..self.item_count as usize {
+                match &mut buffer[i] {
+                    Some(item) => { 
+                        let rel_pos = dir_vec * if self.output == *dir { 
+                            i as f32 
+                        } else { 
+                            self.item_count as f32 - i as f32 
+                        };
+                        item.item.set_target_position(self.position.to_vec2() + rel_pos);
+                    }
+                    None => { }
+                }
+            }
+        }
+    }
+
     fn move_buffer_items(&mut self, direction : Direction, tick_id : u32) {
         let buffer = self.item_buffers.get_mut(&direction).unwrap();
         for i in (0..self.item_count as usize - 1).rev() {
@@ -99,18 +119,22 @@ impl TransportBelt {
         if out_buffer[0].is_none() {
             for dir in &self.inputs {
                 let buffer = self.item_buffers.get_mut(dir).unwrap();
-                if buffer.last().unwrap().is_some() {
-                    push_to_center = buffer[self.item_count as usize - 1].take();
-                    push_to_center.as_mut().unwrap().last_tick_moved = tick_id;
-                    break;
+                if (*buffer.last().unwrap()).is_some() {
+                    let last_tick_moved = buffer.last().unwrap().as_ref().unwrap().last_tick_moved;
+                    if last_tick_moved != tick_id {
+                        push_to_center = buffer[self.item_count as usize - 1].take();
+                        push_to_center.as_mut().unwrap().last_tick_moved = tick_id;
+                        break;
+                    }
                 }
             }
         }
 
         if push_to_center.is_some() {
             let out_buffer = self.item_buffers.get_mut(&self.output).unwrap();
-            out_buffer[0].replace(push_to_center.unwrap());
+            (*out_buffer)[0] = push_to_center;
         }
+
         // Move input buffers.
         for &dir in &self.inputs.clone() {
             self.move_buffer_items(dir, tick_id);
@@ -122,23 +146,15 @@ impl GameEntity for TransportBelt {
     fn update(&mut self, delta_time : f32) {
         for dir in self.inputs.iter().chain(iter::once(&self.output)) {
             let buffer = self.item_buffers.get_mut(dir).unwrap();
-            for item in buffer.iter_mut().enumerate() {
+            for item in buffer {
                 match item {
-                    (item_id, Some(item)) => {
-                        item.item.update(delta_time);
-                        // DEBUG UPDATE POSITION.
-                        let dir_vec = dir.to_ivec2().to_vec2() / (2.0 * self.item_count as f32);
-                        let rel_pos = dir_vec * if self.output == *dir { 
-                            item_id as f32 
-                        } else { 
-                            self.item_count as f32 - item_id as f32 
-                        };
-                        item.item.set_position(self.position.to_vec2() + rel_pos);
-                    }
-                    _ => { }
+                    Some(item) => { item.item.update(delta_time); }
+                    None => { }
                 }
             }
         }
+        // DEBUG
+        self.set_item_positions();
     }
 
     fn tick(&mut self, tick_id : u32) {
@@ -148,9 +164,7 @@ impl GameEntity for TransportBelt {
             let buffer = self.item_buffers.get_mut(dir).unwrap();
             for item in buffer {
                 match item {
-                    Some(item) => {
-                        item.item.tick(tick_id);
-                    }
+                    Some(item) => { item.item.tick(tick_id); }
                     None => { }
                 }
             }
@@ -162,9 +176,7 @@ impl GameEntity for TransportBelt {
             let buffer = self.item_buffers.get_mut(dir).unwrap();
             for item in buffer {
                 match item {
-                    Some(item) => {
-                        item.item.render(renderer);
-                    }
+                    Some(item) => { item.item.render(renderer); }
                     None => { }
                 }
             }

@@ -17,7 +17,7 @@ use game_entity::*;
 use renderer::{Renderer, camera::Camera};
 use resource::item::*;
 
-const TICK_PERIOD : f32 = 1.0;
+pub const TICK_PERIOD : f32 = 1.0;
 
 pub struct Game {
     camera : Camera,

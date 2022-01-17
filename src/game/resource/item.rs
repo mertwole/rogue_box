@@ -15,7 +15,11 @@ pub struct ItemId(u64);
 
 pub struct Item {
     id : ItemId,
-    sprite : Sprite
+    sprite : Sprite,
+    position : Vec2,
+    prev_position : Vec2,
+    from_last_tick : f32,
+    last_tick_id : u32
 }
 
 impl Item {
@@ -24,7 +28,11 @@ impl Item {
         let sprite = Sprite::new(texture);
         Item { 
             id : ItemId(0), 
-            sprite
+            sprite,
+            position : Vec2::zero(),
+            prev_position : Vec2::zero(),
+            from_last_tick : 0.0,
+            last_tick_id : 0
         }
     }
 
@@ -52,7 +60,11 @@ impl Item {
                 let sprite = Sprite::new(AssetManager::get_asset_id(tex_path.as_str()));
                 let new_item = Item { 
                     id : ItemFactory::get_item_id_by_name(name.as_str()),
-                    sprite
+                    sprite,
+                    prev_position : Vec2::zero(),
+                    position : Vec2::zero(),
+                    from_last_tick : 0.0,
+                    last_tick_id : 0
                 };
                 
                 new_item
@@ -64,18 +76,22 @@ impl Item {
         }
     }
 
-    pub fn set_position(&mut self, position : Vec2) {
-        self.sprite.position = position;
+    pub fn set_target_position(&mut self, position : Vec2) {
+        self.position = position;
+        self.prev_position = position;
     }
 }
 
 impl GameEntity for Item {
     fn update(&mut self, delta_time : f32) {
-
+        self.from_last_tick += delta_time;
+        let interpolate = self.from_last_tick / crate::game::TICK_PERIOD;
+        self.sprite.position = self.prev_position + (self.position - self.prev_position) * interpolate;
     }
 
     fn tick(&mut self, tick_id : u32) {
-
+        self.from_last_tick = 0.0;
+        self.last_tick_id = tick_id;
     }
 
     fn render(&mut self, renderer : &mut Renderer) {
@@ -87,7 +103,11 @@ impl Clone for Item {
     fn clone(&self) -> Item {
         Item { 
             id : self.id, 
-            sprite : self.sprite.clone()
+            sprite : self.sprite.clone(),
+            position : self.position,
+            prev_position : self.prev_position,
+            from_last_tick : self.from_last_tick,
+            last_tick_id : self.last_tick_id
         }
     }
 }

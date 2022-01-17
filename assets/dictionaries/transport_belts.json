@@ -2,7 +2,7 @@
     "transport_belts" : [
         {
             "name" : "basic transport belt",
-            "item_count" : 3
+            "item_count" : 2
         }
     ]
 }

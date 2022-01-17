@@ -15,7 +15,7 @@ pub struct Cell {
 
 impl Cell {
     pub fn new(position : IVec2) -> Cell {
-        let texture = AssetManager::get_asset_id("textures/surfaces/stone.png");
+        let texture = AssetManager::get_asset_id("textures/buildings/building.png");
         let mut sprite = Sprite::new(texture);
         sprite.position = position.to_vec2();
         Cell {
