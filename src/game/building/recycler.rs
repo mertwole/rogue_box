@@ -169,11 +169,11 @@ impl Building for Recycler {
 }
 
 impl MessageSender for Recycler {
-    fn pull_messages(&mut self) -> Vec<Message> {
+    fn pull_messages(&mut self, tick_id : u32) -> Vec<Message> {
         Vec::new()
     }
 
-    fn push_back_message(&mut self, message: Message) { }
+    fn message_send_result(&mut self, result : MessageSendResult) { }
 }
 
 impl MessageReceiver for Recycler {

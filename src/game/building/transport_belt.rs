@@ -7,6 +7,7 @@ use crate::game::resource::item::Item;
 use crate::common::direction::Direction;
 use crate::common::json_reader::JsonReader;
 use crate::common::math::IVec2;
+use crate::game::message::*;
 
 pub struct TransportedItem {
     item : Item,
@@ -76,19 +77,19 @@ impl TransportBelt {
         }
     }
 
-    fn set_item_positions(&mut self) {
+    fn set_item_positions(&mut self, tick_id : u32) {
         for dir in self.inputs.iter().chain(iter::once(&self.output)) {
             let dir_vec = dir.to_ivec2().to_vec2() / (2.0 * self.item_count as f32);
             let buffer = self.item_buffers.get_mut(&dir).unwrap();
             for i in 0..self.item_count as usize {
                 match &mut buffer[i] {
                     Some(item) => { 
-                        let rel_pos = dir_vec * if self.output == *dir { 
-                            i as f32 
-                        } else { 
-                            self.item_count as f32 - i as f32 
+                        let rel_pos = dir_vec * if self.output == *dir {
+                            i as f32
+                        } else {
+                            self.item_count as f32 - i as f32
                         };
-                        item.item.set_target_position(self.position.to_vec2() + rel_pos);
+                        item.item.set_position_in_tick(self.position.to_vec2() + rel_pos, tick_id + 1);
                     }
                     None => { }
                 }
@@ -139,6 +140,8 @@ impl TransportBelt {
         for &dir in &self.inputs.clone() {
             self.move_buffer_items(dir, tick_id);
         }
+
+        self.set_item_positions(tick_id);
     }
 }
 
@@ -153,8 +156,6 @@ impl GameEntity for TransportBelt {
                 }
             }
         }
-        // DEBUG
-        self.set_item_positions();
     }
 
     fn tick(&mut self, tick_id : u32) {
@@ -204,28 +205,38 @@ impl Building for TransportBelt {
 }
 
 impl MessageSender for TransportBelt {
-    fn pull_messages(&mut self) -> Vec<Message> {
+    fn pull_messages(&mut self, tick_id : u32) -> Vec<Message> {
         let output_buf = self.item_buffers.get_mut(&self.output).unwrap();
         if output_buf.last().unwrap().is_some() {
             let item = output_buf[self.item_count as usize - 1].take();
-            vec![ 
+            vec![
                 Message { 
                     sender : self.position, 
                     receiver : self.position + self.output.to_ivec2(), 
-                    tick_id : 0,
+                    tick_id,
                     body : MessageBody::PushItem(item.unwrap())
                 }
             ]
         } else { vec![] }
     }
 
-    fn push_back_message(&mut self, message : Message) {
-        match message.body {
-            MessageBody::PushItem(item) => {
-                let out_buf = self.item_buffers.get_mut(&self.output).unwrap();
-                out_buf[self.item_count as usize - 1] = Some(item);
+    fn message_send_result(&mut self, result : MessageSendResult) {
+        match result.message {
+            Some(message) => {
+                // Item failed to move.
+                match message.body {
+                    MessageBody::PushItem(item) => {
+                        let out_buf = self.item_buffers.get_mut(&self.output).unwrap();
+                        out_buf[self.item_count as usize - 1] = Some(item);
+                        self.set_item_positions(result.tick_id);
+                    }
+                    _ => { }
+                }
             }
-            _ => { }
+            None => {
+                // Item moved.
+                self.move_items(result.tick_id);
+            }
         }
     }
 }
@@ -246,6 +257,7 @@ impl MessageReceiver for TransportBelt {
                             MessageBody::PushItem(mut item) => {
                                 item.last_tick_moved = message.tick_id;
                                 input[0] = Some(item); 
+                                self.set_item_positions(message.tick_id);
                                 return None;
                             }
                             _ => { }

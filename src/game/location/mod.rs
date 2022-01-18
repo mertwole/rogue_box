@@ -91,8 +91,6 @@ impl GameEntity for Location {
 
     fn tick(&mut self, tick_id : u32) {
         self.field.tick(tick_id);
-        self.field.message_exchange(tick_id);
-        self.field.tick(tick_id);
     }
 
     fn render(&mut self, renderer : &mut Renderer) {

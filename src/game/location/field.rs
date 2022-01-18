@@ -31,59 +31,70 @@ impl Field {
     pub fn get_cell_mut(&mut self, coords : IVec2) -> Option<&mut Cell> {
         if coords.x >= self.min_coord.x && coords.x <= self.max_coord.x {
             if coords.y >= self.min_coord.y && coords.y <= self.max_coord.y {
-                let arr_coords = coords - self.min_coord;
-                return Some(&mut self.cells[arr_coords.x as usize][arr_coords.y as usize]);
+                return Some(self.get_cell_mut_unchecked(coords));
             }
         } 
         None
     }
 
-    pub fn message_exchange(&mut self, tick_id : u32) {
-        let mut message_queue = Vec::new();
+    fn get_cell_mut_unchecked(&mut self, coords : IVec2) -> &mut Cell {
+        let arr_coords = coords - self.min_coord;
+        &mut self.cells[arr_coords.x as usize][arr_coords.y as usize]
+    }
 
-        for cell_row in &mut self.cells {
-            for cell in cell_row {
-                match &mut cell.building {
-                    Some(building) => { 
-                        message_queue.extend(building.pull_messages());
-                    }
-                    None => { }
-                }
-            }
+    fn push_message_back(&mut self, message : Message, message_id : u32) {
+        let sender = self.get_cell_mut_unchecked(message.sender);
+        let building = sender.building.as_mut().unwrap();
+
+        let result = MessageSendResult { 
+            tick_id : message.tick_id,  
+            message_id,
+            message : Some(message)
+        };
+
+        building.message_send_result(result);
+    }
+
+    fn process_message(&mut self, message : Message, message_id : u32) {
+        let receiver = self.get_cell_mut(message.receiver);
+
+        if receiver.is_none() { 
+            self.push_message_back(message, message_id);
+            return;
         }
+        let receiver_building = &mut receiver.unwrap().building;
 
-        for message in &mut message_queue { message.tick_id = tick_id; }
-
-        loop {
-            let message = message_queue.pop();
-            if message.is_none() { break; }
-            let message = message.unwrap();
-        
-            let cell = self.get_cell_mut(message.receiver);
-            match cell {
-                Some(cell) => {
-                    match &mut cell.building {
-                        Some(building) => { 
-                            let back_message = building.try_push_message(message);
-                            match back_message {
-                                Some(back_message) => {
-                                    let sender = self.get_cell_mut(back_message.sender).unwrap().building.as_mut().unwrap();
-                                    sender.push_back_message(back_message);
-                                    continue;
-                                }
-                                None => { continue; }
-                            }
-                        }
-                        None => {  }
-                    }
-                }
-                None => {  }
-            }
-
-            let sender = self.get_cell_mut(message.sender).unwrap().building.as_mut().unwrap();
-            sender.push_back_message(message);
-            
+        if receiver_building.is_none() { 
+            self.push_message_back(message, message_id);
+            return;
         }
+        let building = receiver_building.as_mut().unwrap();
+
+        let tick_id = message.tick_id;
+        let sender_pos = message.sender;
+        let back_message = building.try_push_message(message);
+        if back_message.is_none() { 
+            let result = MessageSendResult {
+                message_id,
+                tick_id : tick_id,
+                message : None
+            };
+            let sender = self.get_cell_mut_unchecked(sender_pos);
+            let sender_building = sender.building.as_mut().unwrap();
+            sender_building.message_send_result(result);
+            return;
+        }
+        let back_message = back_message.unwrap();
+        let sender = self.get_cell_mut_unchecked(back_message.sender);
+        let sender_building = sender.building.as_mut().unwrap();
+
+        let result = MessageSendResult {
+            message_id,
+            tick_id : back_message.tick_id,
+            message : Some(back_message)
+        };
+
+        sender_building.message_send_result(result);
     }
 }
 
@@ -97,9 +108,25 @@ impl GameEntity for Field {
     }
 
     fn tick(&mut self, tick_id : u32) {
-        for cell_row in &mut self.cells {
-            for cell in cell_row {
+        for x in self.min_coord.x..self.max_coord.x {
+            for y in self.min_coord.y..self.max_coord.y {
+                let cell = self.get_cell_mut_unchecked(IVec2::new(x, y));
                 cell.tick(tick_id);
+            }
+        }
+
+        for x in self.min_coord.x..self.max_coord.x {
+            for y in self.min_coord.y..self.max_coord.y {
+                let cell = self.get_cell_mut_unchecked(IVec2::new(x, y));
+                match &mut cell.building {
+                    Some(building) => { 
+                        let messages = building.pull_messages(tick_id);
+                        for (message_id, message) in messages.into_iter().enumerate() { 
+                            self.process_message(message, message_id as u32); 
+                        }
+                    }
+                    None => { }
+                }
             }
         }
     }

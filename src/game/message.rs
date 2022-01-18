@@ -17,7 +17,15 @@ pub trait MessageReceiver {
     fn try_push_message(&mut self, message : Message) -> Option<Message>;
 }
 
+pub struct MessageSendResult {
+    pub message_id : u32,
+    // If message is Some it means that message is received by receiver
+    // elsewhere it failed to send.
+    pub message : Option<Message>,
+    pub tick_id : u32
+}
+
 pub trait MessageSender {
-    fn pull_messages(&mut self) -> Vec<Message>;
-    fn push_back_message(&mut self, message : Message);
+    fn pull_messages(&mut self, tick_id : u32) -> Vec<Message>;
+    fn message_send_result(&mut self, result : MessageSendResult);
 }
