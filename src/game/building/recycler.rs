@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use super::*;
 
-use crate::game::resource::item::{ItemId, ItemFactory};
+use crate::game::resource::item::*;
 use crate::game::renderer::{Renderer, Sprite};
 use crate::game::game_entity::GameEntity;
+use crate::game::building::transport_belt::TransportedItem;
 use crate::common::asset_manager::{AssetId, AssetManager};
 use crate::common::math::Vec2;
 use crate::common::json_reader::JsonReader;
@@ -22,7 +23,9 @@ pub struct Recycler {
     item_output : HashMap<ItemId, u32>,
 
     item_input_buf : HashMap<ItemId, u32>,
-    item_output_buf : HashMap<ItemId, u32>
+    item_output_buf : HashMap<ItemId, u32>,
+
+    item_prototypes : HashMap<ItemId, Item>
 }
 
 impl Recycler {
@@ -92,7 +95,24 @@ impl Recycler {
             item_output,
 
             item_input_buf,
-            item_output_buf
+            item_output_buf,
+
+            item_prototypes : HashMap::new()
+        }
+    }
+
+    pub fn init_items(&mut self, item_factory : &ItemFactory) {
+        let item_ids = self.item_input.keys().chain(self.item_output.keys());
+        for &item_id in item_ids {
+            if !self.item_prototypes.contains_key(&item_id) {
+                self.item_prototypes.insert(item_id, item_factory.create_item(item_id));
+            }
+        }
+    }
+
+    fn drain_output(&mut self) {
+        for id in self.item_output.keys() {
+            *self.item_output_buf.get_mut(&id).unwrap() = 0;
         }
     }
 }
@@ -156,7 +176,9 @@ impl BuildingClone for Recycler {
                 item_output : self.item_output.clone(),
 
                 item_input_buf,
-                item_output_buf
+                item_output_buf,
+
+                item_prototypes : self.item_prototypes.clone()
             }
         )
     }   
@@ -170,10 +192,40 @@ impl Building for Recycler {
 
 impl MessageSender for Recycler {
     fn pull_messages(&mut self, tick_id : u32) -> Vec<Message> {
-        Vec::new()
+        let mut messages = Vec::new();
+        for item_id in self.item_output.keys() {
+            let item_count = *self.item_output_buf.get(item_id).unwrap();
+            let item_prototype = self.item_prototypes.get(item_id).unwrap();
+            for _ in  0..item_count {
+                messages.push(Message {
+                    id : messages.len() as u32,
+                    sender : self.position.to_ivec2(),
+                    receiver : Receiver::Broadcast,
+                    computed_receiver : None,
+                    tick_id,
+                    body : MessageBody::PushItem(TransportedItem::new(item_prototype.clone()))
+                });
+            }
+        }
+
+        self.drain_output();
+
+        messages
     }
 
-    fn message_send_result(&mut self, result : MessageSendResult) { }
+    fn message_send_result(&mut self, result : MessageSendResult) { 
+        match result.message {
+            Some(message) => { 
+                match &message.body {
+                    MessageBody::PushItem(item) => {
+                        *self.item_output_buf.get_mut(&item.get_id()).unwrap() += 1;
+                    }
+                    _ => { }
+                }
+            }
+            None => { return; }
+        }
+    }
 }
 
 impl MessageReceiver for Recycler {

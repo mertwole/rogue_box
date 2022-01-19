@@ -1,4 +1,5 @@
 use crate::common::math::IVec2;
+use crate::common::direction::Direction;
 use crate::game::game_entity::GameEntity;
 use crate::game::renderer::Renderer;
 use crate::game::message::*;
@@ -42,36 +43,31 @@ impl Field {
         &mut self.cells[arr_coords.x as usize][arr_coords.y as usize]
     }
 
-    fn push_message_back(&mut self, message : Message, message_id : u32) {
+    fn push_message_back(&mut self, message : Message) {
         let sender = self.get_cell_mut_unchecked(message.sender);
         let building = sender.building.as_mut().unwrap();
 
         let result = MessageSendResult { 
             tick_id : message.tick_id,  
-            message_id,
+            message_id : message.id,
             message : Some(message)
         };
 
         building.message_send_result(result);
     }
 
-    fn process_message(&mut self, message : Message, message_id : u32) {
-        let receiver = self.get_cell_mut(message.receiver);
+    fn try_process_message(&mut self, message : Message, receiver : IVec2) -> Option<Message> {
+        let receiver = self.get_cell_mut(receiver);
 
-        if receiver.is_none() { 
-            self.push_message_back(message, message_id);
-            return;
-        }
+        if receiver.is_none() { return Some(message); }
         let receiver_building = &mut receiver.unwrap().building;
 
-        if receiver_building.is_none() { 
-            self.push_message_back(message, message_id);
-            return;
-        }
+        if receiver_building.is_none() { return Some(message); }
         let building = receiver_building.as_mut().unwrap();
 
         let tick_id = message.tick_id;
         let sender_pos = message.sender;
+        let message_id = message.id;
         let back_message = building.try_push_message(message);
         if back_message.is_none() { 
             let result = MessageSendResult {
@@ -82,19 +78,36 @@ impl Field {
             let sender = self.get_cell_mut_unchecked(sender_pos);
             let sender_building = sender.building.as_mut().unwrap();
             sender_building.message_send_result(result);
-            return;
+            return None;
         }
-        let back_message = back_message.unwrap();
-        let sender = self.get_cell_mut_unchecked(back_message.sender);
-        let sender_building = sender.building.as_mut().unwrap();
 
-        let result = MessageSendResult {
-            message_id,
-            tick_id : back_message.tick_id,
-            message : Some(back_message)
+        return back_message;
+    }
+
+    fn process_message(&mut self, mut message : Message) {
+        let receivers = 
+        match message.receiver {
+            Receiver::Direction(dir) => { 
+                vec![message.sender + dir.to_ivec2()] 
+            }
+            Receiver::Broadcast => { 
+                vec![   message.sender + Direction::Up.to_ivec2(),
+                        message.sender + Direction::Right.to_ivec2(),
+                        message.sender + Direction::Down.to_ivec2(),
+                        message.sender + Direction::Left.to_ivec2()]
+            }
         };
 
-        sender_building.message_send_result(result);
+        for receiver in receivers {
+            message.computed_receiver = Some(receiver);
+            message = 
+            match self.try_process_message(message, receiver) {
+                Some(msg) => { msg }
+                None => { return; }
+            }
+        }
+
+        self.push_message_back(message);
     }
 }
 
@@ -122,7 +135,7 @@ impl GameEntity for Field {
                     Some(building) => { 
                         let messages = building.pull_messages(tick_id);
                         for (message_id, message) in messages.into_iter().enumerate() { 
-                            self.process_message(message, message_id as u32); 
+                            self.process_message(message); 
                         }
                     }
                     None => { }

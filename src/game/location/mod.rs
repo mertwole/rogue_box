@@ -32,7 +32,8 @@ impl Location {
         let recyclers = serde_json::from_str(json.as_ref()).unwrap();
         let mut err = false;
         let recyclers = crate::common::json_reader::JsonReader::read_vec(&recyclers, "recyclers", &mut err);
-        let recycler = crate::game::building::recycler::Recycler::from_json_object(&recyclers[0]);
+        let mut recycler = crate::game::building::recycler::Recycler::from_json_object(&recyclers[0]);
+        recycler.init_items(&item_factory);
 
         let cell = field.get_cell_mut(IVec2::new(0, 0)).unwrap();
         cell.build(Box::from(recycler));

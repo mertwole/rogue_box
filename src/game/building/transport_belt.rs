@@ -3,7 +3,7 @@ use std::iter;
 
 use super::*;
 use crate::game::game_entity::*;
-use crate::game::resource::item::Item;
+use crate::game::resource::item::*;
 use crate::common::direction::Direction;
 use crate::common::json_reader::JsonReader;
 use crate::common::math::IVec2;
@@ -22,6 +22,10 @@ impl TransportedItem {
             last_tick_moved : std::u32::MAX
         }
     } 
+
+    pub fn get_id(&self) -> ItemId {
+        self.item.get_id()
+    }
 }
 
 pub struct TransportBelt { 
@@ -211,8 +215,10 @@ impl MessageSender for TransportBelt {
             let item = output_buf[self.item_count as usize - 1].take();
             vec![
                 Message { 
+                    id : 0,
                     sender : self.position, 
-                    receiver : self.position + self.output.to_ivec2(), 
+                    receiver : Receiver::Direction(self.output), 
+                    computed_receiver : None,
                     tick_id,
                     body : MessageBody::PushItem(item.unwrap())
                 }
@@ -249,7 +255,7 @@ impl MessageReceiver for TransportBelt {
                     return Some(message);
                 }
 
-                let direction = Direction::from_ivec2(message.sender - message.receiver);
+                let direction = Direction::from_ivec2(message.sender - message.computed_receiver.unwrap());
                 if self.inputs.contains(&direction) {
                     let input = self.item_buffers.get_mut(&direction).unwrap();
                     if input[0].is_none() { 

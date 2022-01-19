@@ -75,6 +75,10 @@ impl Item {
         }
     }
 
+    pub fn get_id(&self) -> ItemId {
+        self.id
+    }
+
     pub fn set_position_in_tick(&mut self, position : Vec2, tick_id : u32) {
         if self.positions.contains_key(&TickId(tick_id)) {
             *self.positions.get_mut(&TickId(tick_id)).unwrap() = position;
