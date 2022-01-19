@@ -7,7 +7,6 @@ pub struct Message {
     pub id : u32,
     pub sender : IVec2,
     pub receiver : Receiver,
-    pub computed_receiver : Option<IVec2>,
     pub tick_id : u32,
     pub body : MessageBody
 }
@@ -31,7 +30,8 @@ pub struct MessageSendResult {
     // If message is Some it means that message is received by receiver
     // elsewhere it failed to send.
     pub message : Option<Message>,
-    pub tick_id : u32
+    pub tick_id : u32,
+    pub computed_receiver : Option<IVec2>
 }
 
 pub trait MessageSender {

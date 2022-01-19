@@ -47,10 +47,10 @@ impl Location {
             // setup
         tb.set_config(vec![Direction::Left], Direction::Right);
         tb.position = IVec2::new(1, 0);
-        let item_id = ItemFactory::get_item_id_by_name("copper");
-        tb.item_buffers.get_mut(&Direction::Left).unwrap()[0] = Some(TransportedItem::new(item_factory.create_item(item_id)));
-        let item_id = ItemFactory::get_item_id_by_name("copper");
-        tb.item_buffers.get_mut(&Direction::Left).unwrap()[1] = Some(TransportedItem::new(item_factory.create_item(item_id)));
+        //let item_id = ItemFactory::get_item_id_by_name("copper");
+        //tb.item_buffers.get_mut(&Direction::Left).unwrap()[0] = Some(TransportedItem::new(item_factory.create_item(item_id)));
+        //let item_id = ItemFactory::get_item_id_by_name("copper");
+        //tb.item_buffers.get_mut(&Direction::Left).unwrap()[1] = Some(TransportedItem::new(item_factory.create_item(item_id)));
             // setup 
         let cell = field.get_cell_mut(tb.position).unwrap();
         cell.build(Box::from(tb));

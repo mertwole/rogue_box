@@ -6,7 +6,7 @@ use crate::game::game_entity::*;
 use crate::game::resource::item::*;
 use crate::common::direction::Direction;
 use crate::common::json_reader::JsonReader;
-use crate::common::math::IVec2;
+use crate::common::math::{Vec2, IVec2};
 use crate::game::message::*;
 
 pub struct TransportedItem {
@@ -81,46 +81,38 @@ impl TransportBelt {
         }
     }
 
-    fn set_item_positions(&mut self, tick_id : u32) {
-        for dir in self.inputs.iter().chain(iter::once(&self.output)) {
-            let dir_vec = dir.to_ivec2().to_vec2() / (2.0 * self.item_count as f32);
-            let buffer = self.item_buffers.get_mut(&dir).unwrap();
-            for i in 0..self.item_count as usize {
-                match &mut buffer[i] {
-                    Some(item) => { 
-                        let rel_pos = dir_vec * if self.output == *dir {
-                            i as f32
-                        } else {
-                            self.item_count as f32 - i as f32
-                        };
-                        item.item.set_position_in_tick(self.position.to_vec2() + rel_pos, tick_id + 1);
-                    }
-                    None => { }
-                }
-            }
-        }
+    fn compute_item_position(&self, direction : Direction, vec_id : i32) -> Vec2 {
+        let dir_vec = direction.to_ivec2().to_vec2() / (2.0 * self.item_count as f32);
+        let rel_pos = dir_vec * if self.output == direction {
+            vec_id as f32
+        } else {
+            self.item_count as f32 - vec_id as f32
+        };
+        self.position.to_vec2() + rel_pos
     }
 
     fn move_buffer_items(&mut self, direction : Direction, tick_id : u32) {
-        let buffer = self.item_buffers.get_mut(&direction).unwrap();
         for i in (0..self.item_count as usize - 1).rev() {
+            let move_from = self.compute_item_position(direction, i as i32);
+            let move_to = self.compute_item_position(direction, i as i32 + 1);
+
+            let buffer = self.item_buffers.get_mut(&direction).unwrap();
             if buffer[i].is_some() {
-                let last_tick_moved = buffer.get(i).unwrap().as_ref().unwrap().last_tick_moved;
+                let last_tick_moved = buffer[i].as_ref().unwrap().last_tick_moved;
                 if buffer[i + 1].is_none() && last_tick_moved != tick_id {
                     let mut item = buffer[i].take();
                     item.as_mut().unwrap().last_tick_moved = tick_id;
+                    item.as_mut().unwrap().item.set_movement(move_from, move_to, tick_id);
                     buffer[i + 1] = item;
                 }
             }
         }
     }
 
-    fn move_items(&mut self, tick_id : u32) {
-        // Move output buffer.
-        self.move_buffer_items(self.output, tick_id);
-        // Move last items of inputs to center.
+    fn move_last_input_buffer_items(&mut self, tick_id : u32) {
         let out_buffer = self.item_buffers.get_mut(&self.output).unwrap();
         let mut push_to_center = None;
+        let mut move_from = Vec2::zero();
         if out_buffer[0].is_none() {
             for dir in &self.inputs {
                 let buffer = self.item_buffers.get_mut(dir).unwrap();
@@ -129,6 +121,7 @@ impl TransportBelt {
                     if last_tick_moved != tick_id {
                         push_to_center = buffer[self.item_count as usize - 1].take();
                         push_to_center.as_mut().unwrap().last_tick_moved = tick_id;
+                        move_from = self.compute_item_position(*dir, self.item_count as i32 - 1);
                         break;
                     }
                 }
@@ -136,16 +129,55 @@ impl TransportBelt {
         }
 
         if push_to_center.is_some() {
+            let move_to = self.compute_item_position(self.output, 0);
             let out_buffer = self.item_buffers.get_mut(&self.output).unwrap();
             (*out_buffer)[0] = push_to_center;
+            (*out_buffer)[0].as_mut().unwrap().item.set_movement(move_from, move_to, tick_id);
         }
+    }
 
-        // Move input buffers.
+    fn move_items(&mut self, tick_id : u32) {
+        self.move_buffer_items(self.output, tick_id);
+        self.move_last_input_buffer_items(tick_id);
         for &dir in &self.inputs.clone() {
             self.move_buffer_items(dir, tick_id);
         }
+    }
 
-        self.set_item_positions(tick_id);
+    fn try_push_item(&mut self, mut item : TransportedItem, direction : Direction, tick_id : u32) -> Option<TransportedItem> {
+        if !self.inputs.contains(&direction) { return Some(item); }
+
+        let move_from = self.compute_item_position(direction, -1);
+        let move_to = self.compute_item_position(direction, 0);
+
+        let input = self.item_buffers.get_mut(&direction).unwrap();
+        if input[0].is_some() { return Some(item); }
+        if item.last_tick_moved == tick_id { return Some(item); }
+        
+        item.item.set_movement(move_from, move_to, tick_id);
+        item.last_tick_moved = tick_id;
+        input[0].replace(item);
+        None
+    }
+
+    fn pull_item(&mut self, tick_id : u32) -> Option<TransportedItem> {
+        let output_buf = self.item_buffers.get_mut(&self.output).unwrap();
+        let item = output_buf.last_mut().unwrap().as_mut();
+        if item.is_none() { return None; }
+        if item.unwrap().last_tick_moved == tick_id { return None; }
+        let mut item = output_buf.last_mut().unwrap().take().unwrap();
+        let move_from = self.compute_item_position(self.output, self.item_count as i32 - 1);
+        let move_to = self.compute_item_position(self.output, self.item_count as i32);
+        item.item.set_movement(move_from, move_to, tick_id);
+        Some(item)
+    }
+
+    fn pull_item_failed(&mut self, mut item : TransportedItem, tick_id : u32) {
+        let pos = self.compute_item_position(self.output, self.item_count as i32 - 1);
+        item.item.set_movement(pos, pos, tick_id);
+
+        let output_buf = self.item_buffers.get_mut(&self.output).unwrap();
+        output_buf.last_mut().unwrap().replace(item);
     }
 }
 
@@ -210,20 +242,22 @@ impl Building for TransportBelt {
 
 impl MessageSender for TransportBelt {
     fn pull_messages(&mut self, tick_id : u32) -> Vec<Message> {
-        let output_buf = self.item_buffers.get_mut(&self.output).unwrap();
-        if output_buf.last().unwrap().is_some() {
-            let item = output_buf[self.item_count as usize - 1].take();
-            vec![
-                Message { 
-                    id : 0,
-                    sender : self.position, 
-                    receiver : Receiver::Direction(self.output), 
-                    computed_receiver : None,
-                    tick_id,
-                    body : MessageBody::PushItem(item.unwrap())
-                }
-            ]
-        } else { vec![] }
+        let pulled_item = self.pull_item(tick_id);
+
+        match pulled_item {
+            Some(item) => {
+                vec![ 
+                        Message { 
+                            id : 0,
+                            sender : self.position, 
+                            receiver : Receiver::Direction(self.output), 
+                            tick_id,
+                            body : MessageBody::PushItem(item) 
+                        }
+                    ]
+            }
+            None => { vec![] }
+        }
     }
 
     fn message_send_result(&mut self, result : MessageSendResult) {
@@ -232,9 +266,7 @@ impl MessageSender for TransportBelt {
                 // Item failed to move.
                 match message.body {
                     MessageBody::PushItem(item) => {
-                        let out_buf = self.item_buffers.get_mut(&self.output).unwrap();
-                        out_buf[self.item_count as usize - 1] = Some(item);
-                        self.set_item_positions(result.tick_id);
+                        self.pull_item_failed(item, message.tick_id);
                     }
                     _ => { }
                 }
@@ -248,29 +280,22 @@ impl MessageSender for TransportBelt {
 }
 
 impl MessageReceiver for TransportBelt {
-    fn try_push_message(&mut self, message : Message) -> Option<Message> {
-        match &message.body {
+    fn try_push_message(&mut self, mut message : Message) -> Option<Message> {
+        match message.body {
             MessageBody::PushItem(item) => { 
-                if item.last_tick_moved == message.tick_id {
-                    return Some(message);
+                if item.last_tick_moved == message.tick_id { 
+                    message.body = MessageBody::PushItem(item); 
+                    return Some(message); 
                 }
-
-                let direction = Direction::from_ivec2(message.sender - message.computed_receiver.unwrap());
-                if self.inputs.contains(&direction) {
-                    let input = self.item_buffers.get_mut(&direction).unwrap();
-                    if input[0].is_none() { 
-                        match message.body {
-                            MessageBody::PushItem(mut item) => {
-                                item.last_tick_moved = message.tick_id;
-                                input[0] = Some(item); 
-                                self.set_item_positions(message.tick_id);
-                                return None;
-                            }
-                            _ => { }
-                        }
+                let direction = Direction::from_ivec2(message.sender - self.position);
+                let push_result = self.try_push_item(item, direction, message.tick_id);
+                match push_result {
+                    Some(item) => {
+                        message.body = MessageBody::PushItem(item); 
+                        Some(message) 
                     }
+                    None => { None }
                 }
-                Some(message)
             }
             _ => { Some(message) }
         }

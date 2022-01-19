@@ -195,13 +195,12 @@ impl MessageSender for Recycler {
         let mut messages = Vec::new();
         for item_id in self.item_output.keys() {
             let item_count = *self.item_output_buf.get(item_id).unwrap();
-            let item_prototype = self.item_prototypes.get(item_id).unwrap();
+            let item_prototype = self.item_prototypes.get(item_id).unwrap();            
             for _ in  0..item_count {
                 messages.push(Message {
                     id : messages.len() as u32,
                     sender : self.position.to_ivec2(),
                     receiver : Receiver::Broadcast,
-                    computed_receiver : None,
                     tick_id,
                     body : MessageBody::PushItem(TransportedItem::new(item_prototype.clone()))
                 });

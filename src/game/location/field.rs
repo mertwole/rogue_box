@@ -50,30 +50,32 @@ impl Field {
         let result = MessageSendResult { 
             tick_id : message.tick_id,  
             message_id : message.id,
-            message : Some(message)
+            message : Some(message),
+            computed_receiver : None
         };
 
         building.message_send_result(result);
     }
 
     fn try_process_message(&mut self, message : Message, receiver : IVec2) -> Option<Message> {
-        let receiver = self.get_cell_mut(receiver);
+        let receiver_cell = self.get_cell_mut(receiver);
 
-        if receiver.is_none() { return Some(message); }
-        let receiver_building = &mut receiver.unwrap().building;
+        if receiver_cell.is_none() { return Some(message); }
+        let receiver_building = &mut receiver_cell.unwrap().building;
 
         if receiver_building.is_none() { return Some(message); }
-        let building = receiver_building.as_mut().unwrap();
+        let receiver_building = receiver_building.as_mut().unwrap();
 
         let tick_id = message.tick_id;
         let sender_pos = message.sender;
         let message_id = message.id;
-        let back_message = building.try_push_message(message);
+        let back_message = receiver_building.try_push_message(message);
         if back_message.is_none() { 
             let result = MessageSendResult {
                 message_id,
                 tick_id : tick_id,
-                message : None
+                message : None,
+                computed_receiver : Some(receiver)
             };
             let sender = self.get_cell_mut_unchecked(sender_pos);
             let sender_building = sender.building.as_mut().unwrap();
@@ -99,7 +101,6 @@ impl Field {
         };
 
         for receiver in receivers {
-            message.computed_receiver = Some(receiver);
             message = 
             match self.try_process_message(message, receiver) {
                 Some(msg) => { msg }
