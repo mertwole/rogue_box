@@ -56,13 +56,13 @@ impl Game {
         }
     }
 
-    fn update_all(&mut self, delta_time : f32) {
-        self.location.update(delta_time);
+    fn update_all(&mut self, parameters : &UpdateParameters) {
+        self.location.update(parameters);
     }
 
     fn tick_all(&mut self) {
         self.location.tick(self.tick_id);
-        self.tick_id += 1;
+        
     } 
 }
 
@@ -74,9 +74,16 @@ impl EventHandler for Game {
         if self.from_last_tick > TICK_PERIOD {
             self.from_last_tick -= TICK_PERIOD;
             self.tick_all();
+            self.tick_id += 1;
         }
 
-        self.update_all(delta_time);
+        let update_parameters = UpdateParameters {
+            delta_time,
+            from_last_tick : self.from_last_tick,
+            last_tick_id : self.tick_id
+        };
+
+        self.update_all(&update_parameters);
 
         Ok(())
     }

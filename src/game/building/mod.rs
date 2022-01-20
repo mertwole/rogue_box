@@ -1,4 +1,4 @@
-use crate::game::game_entity::GameEntity;
+use crate::game::game_entity::*;
 use crate::game::renderer::Renderer;
 use crate::game::message::*;
 

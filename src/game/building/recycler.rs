@@ -13,7 +13,7 @@ use crate::common::json_reader::JsonReader;
 pub struct Recycler {
     name : String,
     texture : AssetId,
-    position : Vec2,
+    /*DEBUG*/ pub position : Vec2,
 
     period : u32,
     from_last_production : u32,
@@ -118,7 +118,7 @@ impl Recycler {
 }
 
 impl GameEntity for Recycler {
-    fn update(&mut self, delta_time : f32) {
+    fn update(&mut self, parameters : &UpdateParameters) {
 
     }
 

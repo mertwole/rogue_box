@@ -3,7 +3,7 @@ use super::*;
 struct ErrorBuilding { }
 
 impl GameEntity for ErrorBuilding {
-    fn update(&mut self, delta_time : f32) { }
+    fn update(&mut self, parameters : &UpdateParameters) { }
     fn tick(&mut self, tick_id : u32) { }
     fn render(&mut self, renderer : &mut Renderer) { }
 }

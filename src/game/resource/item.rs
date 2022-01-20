@@ -6,7 +6,7 @@ extern crate serde_json;
 
 use super::Resource;
 use crate::common::asset_manager::{AssetManager, AssetId};
-use crate::game::game_entity::GameEntity;
+use crate::game::game_entity::*;
 use crate::common::math::Vec2;
 use crate::game::renderer::{Renderer, Sprite};
 
@@ -26,10 +26,7 @@ pub struct Item {
     id : ItemId,
     sprite : Sprite,
     
-    movement : Option<ItemMovement>,
-
-    from_last_tick : f32,
-    last_tick_id : u32,
+    movement : Option<ItemMovement>
 }
 
 impl Item {
@@ -39,9 +36,7 @@ impl Item {
         Item { 
             id : ItemId(0), 
             sprite,
-            movement : None,
-            from_last_tick : 0.0,
-            last_tick_id : std::u32::MAX
+            movement : None
         }
     }
 
@@ -70,9 +65,7 @@ impl Item {
                 let new_item = Item { 
                     id : ItemFactory::get_item_id_by_name(name.as_str()),
                     sprite,
-                    movement : None,
-                    from_last_tick : 0.0,
-                    last_tick_id : std::u32::MAX
+                    movement : None
                 };
                 
                 new_item
@@ -94,16 +87,14 @@ impl Item {
 }
 
 impl GameEntity for Item {
-    fn update(&mut self, delta_time : f32) {
-        self.from_last_tick += delta_time;
-
+    fn update(&mut self, parameters : &UpdateParameters) {
         match &self.movement {
             None => {
                 self.sprite.position = Vec2::zero();
             }
             Some(movement) => {
-                if movement.tick_id == self.last_tick_id {
-                    let interpolation = self.from_last_tick / crate::game::TICK_PERIOD;
+                if movement.tick_id + 1 == parameters.last_tick_id {
+                    let interpolation = parameters.from_last_tick / crate::game::TICK_PERIOD;
                     self.sprite.position = movement.from + (movement.to - movement.from) * interpolation;
                 } else {
                     self.sprite.position = movement.to;
@@ -113,8 +104,7 @@ impl GameEntity for Item {
     }
 
     fn tick(&mut self, tick_id : u32) {
-        self.from_last_tick = 0.0;
-        self.last_tick_id = tick_id;
+
     }
 
     fn render(&mut self, renderer : &mut Renderer) {
@@ -127,9 +117,7 @@ impl Clone for Item {
         Item { 
             id : self.id, 
             sprite : self.sprite.clone(),
-            movement : self.movement.clone(),
-            from_last_tick : self.from_last_tick,
-            last_tick_id : self.last_tick_id
+            movement : self.movement.clone()
         }
     }
 }

@@ -7,7 +7,7 @@
 
             "items" : {
                 "input" : [ ],
-                "output" : [ { "item" : "iron", "amount" : 2 } ]
+                "output" : [ { "item" : "iron", "amount" : 1 } ]
             }
         }
     ]   

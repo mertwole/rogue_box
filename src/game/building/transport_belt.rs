@@ -182,12 +182,12 @@ impl TransportBelt {
 }
 
 impl GameEntity for TransportBelt {
-    fn update(&mut self, delta_time : f32) {
+    fn update(&mut self, parameters : &UpdateParameters) {
         for dir in self.inputs.iter().chain(iter::once(&self.output)) {
             let buffer = self.item_buffers.get_mut(dir).unwrap();
             for item in buffer {
                 match item {
-                    Some(item) => { item.item.update(delta_time); }
+                    Some(item) => { item.item.update(parameters); }
                     None => { }
                 }
             }

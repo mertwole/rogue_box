@@ -1,6 +1,6 @@
 use crate::common::math::IVec2;
 use crate::common::direction::Direction;
-use crate::game::game_entity::GameEntity;
+use crate::game::game_entity::*;
 use crate::game::renderer::Renderer;
 use crate::game::message::*;
 
@@ -113,10 +113,10 @@ impl Field {
 }
 
 impl GameEntity for Field {
-    fn update(&mut self, delta_time : f32) {
+    fn update(&mut self, parameters : &UpdateParameters) {
         for cell_row in &mut self.cells {
             for cell in cell_row {
-                cell.update(delta_time);
+                cell.update(parameters);
             }
         }
     }

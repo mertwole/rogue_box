@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::game::game_entity::GameEntity;
+use crate::game::game_entity::*;
 use crate::common::asset_manager::{AssetId, AssetManager};
 use crate::game::building::Building;
 use crate::game::building::transport_belt::TransportBelt;
@@ -15,7 +15,7 @@ pub struct Cell {
 
 impl Cell {
     pub fn new(position : IVec2) -> Cell {
-        let texture = AssetManager::get_asset_id("textures/buildings/building.png");
+        let texture = AssetManager::get_asset_id("textures/surfaces/grass.png");
         let mut sprite = Sprite::new(texture);
         sprite.position = position.to_vec2();
         Cell {
@@ -31,10 +31,10 @@ impl Cell {
 }
 
 impl GameEntity for Cell {
-    fn update(&mut self, delta_time : f32) {
+    fn update(&mut self, parameters : &UpdateParameters) {
         match self.building.as_mut() {
             Some(building) => { 
-                building.update(delta_time); 
+                building.update(parameters); 
             }
             _ => { }
         }
