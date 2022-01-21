@@ -18,10 +18,10 @@ impl Field {
         let x_count = (max_coord.x - min_coord.x) as usize;
         let y_count = (max_coord.y - min_coord.y) as usize;
         let mut cells = Vec::with_capacity(x_count);
-        for x in 0..x_count {
+        for _ in 0..x_count {
             let mut cells_row = Vec::with_capacity(y_count);
-            for y in 0..y_count {
-                cells_row.push(Cell::new(IVec2::new(x as isize, y as isize) + min_coord));
+            for _ in 0..y_count {
+                cells_row.push(Cell::new());
             }
             cells.push(cells_row);
         }
@@ -44,21 +44,20 @@ impl Field {
     }
 
     fn push_message_back(&mut self, message : Message) {
-        let sender = self.get_cell_mut_unchecked(message.sender);
+        let sender = self.get_cell_mut_unchecked(message.sender.get_pos());
         let building = sender.building.as_mut().unwrap();
 
         let result = MessageSendResult { 
             tick_id : message.tick_id,  
             message_id : message.id,
-            message : Some(message),
-            computed_receiver : None
+            message : Some(message)
         };
 
         building.message_send_result(result);
     }
 
-    fn try_process_message(&mut self, message : Message, receiver : IVec2) -> Option<Message> {
-        let receiver_cell = self.get_cell_mut(receiver);
+    fn try_process_message(&mut self, message : Message) -> Option<Message> {
+        let receiver_cell = self.get_cell_mut(message.receiver.get_pos());
 
         if receiver_cell.is_none() { return Some(message); }
         let receiver_building = &mut receiver_cell.unwrap().building;
@@ -67,15 +66,14 @@ impl Field {
         let receiver_building = receiver_building.as_mut().unwrap();
 
         let tick_id = message.tick_id;
-        let sender_pos = message.sender;
+        let sender_pos = message.sender.get_pos();
         let message_id = message.id;
         let back_message = receiver_building.try_push_message(message);
         if back_message.is_none() { 
             let result = MessageSendResult {
                 message_id,
                 tick_id : tick_id,
-                message : None,
-                computed_receiver : Some(receiver)
+                message : None
             };
             let sender = self.get_cell_mut_unchecked(sender_pos);
             let sender_building = sender.building.as_mut().unwrap();
@@ -87,22 +85,23 @@ impl Field {
     }
 
     fn process_message(&mut self, mut message : Message) {
-        let receivers = 
-        match message.receiver {
-            Receiver::Direction(dir) => { 
-                vec![message.sender + dir.to_ivec2()] 
+        let targets = 
+        match message.target {
+            Target::Direction(dir) => { 
+                vec![message.sender.get_pos() + dir.to_ivec2()] 
             }
-            Receiver::Broadcast => { 
-                vec![   message.sender + Direction::Up.to_ivec2(),
-                        message.sender + Direction::Right.to_ivec2(),
-                        message.sender + Direction::Down.to_ivec2(),
-                        message.sender + Direction::Left.to_ivec2()]
+            Target::Broadcast => { 
+                vec![   message.sender.get_pos() + Direction::Up.to_ivec2(),
+                        message.sender.get_pos() + Direction::Right.to_ivec2(),
+                        message.sender.get_pos() + Direction::Down.to_ivec2(),
+                        message.sender.get_pos() + Direction::Left.to_ivec2()]
             }
         };
 
-        for receiver in receivers {
+        for target in targets {
+            message.receiver = MessageExchangeActor::AtPosition(target);
             message = 
-            match self.try_process_message(message, receiver) {
+            match self.try_process_message(message) {
                 Some(msg) => { msg }
                 None => { return; }
             }
@@ -114,8 +113,8 @@ impl Field {
 
 impl GameEntity for Field {
     fn update(&mut self, parameters : &UpdateParameters) {
-        for cell_row in &mut self.cells {
-            for cell in cell_row {
+        for cell_column in &mut self.cells {
+            for cell in cell_column {
                 cell.update(parameters);
             }
         }
@@ -135,7 +134,9 @@ impl GameEntity for Field {
                 match &mut cell.building {
                     Some(building) => { 
                         let messages = building.pull_messages(tick_id);
-                        for (message_id, message) in messages.into_iter().enumerate() { 
+                        for (message_id, mut message) in messages.into_iter().enumerate() { 
+                            message.sender = MessageExchangeActor::AtPosition(IVec2::new(x, y));
+                            message.id = message_id as u32;
                             self.process_message(message); 
                         }
                     }
@@ -145,10 +146,12 @@ impl GameEntity for Field {
         }
     }
 
-    fn render(&mut self, renderer : &mut Renderer) {
-        for cell_row in &mut self.cells {
-            for cell in cell_row {
-                cell.render(renderer);
+    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
+        for (x, cell_column) in self.cells.iter_mut().enumerate() {
+            for (y, cell) in cell_column.iter_mut().enumerate() {
+                let cell_pos = self.min_coord + IVec2::new(x as isize, y as isize);
+                let cell_transform = SpriteTransform::default().add_translation(cell_pos.to_vec2());
+                cell.render(renderer, transform.combine(&cell_transform));
             }
         }
     }

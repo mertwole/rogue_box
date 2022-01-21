@@ -1,17 +1,16 @@
-use std::rc::Rc;
-
 use crate::game::game_entity::*;
-use crate::common::asset_manager::{AssetManager, AssetId};
-use crate::common::math::{Vec2, IVec2};
-use crate::game::renderer::{Renderer, Sprite};
+use crate::common::asset_manager::AssetManager;
+use crate::common::math::IVec2;
+use crate::game::renderer::Renderer;
 
-use crate::game::building::transport_belt::{TransportBelt, TransportedItem};
-use crate::game::resource::item::{Item, ItemFactory};
+use crate::game::building::transport_belt::TransportBelt;
+use crate::game::resource::item::ItemFactory;
 
 use crate::common::direction::Direction;
 
 pub mod cell;
 mod field;
+pub mod surface;
 
 use field::Field;
 
@@ -44,7 +43,6 @@ impl Location {
         let mut err = false;
         let recyclers = crate::common::json_reader::JsonReader::read_vec(&recyclers, "recyclers", &mut err);
         let mut recycler = crate::game::building::recycler::Recycler::from_json_object(&recyclers[0]);
-        recycler.position = Vec2::new(1.0, 1.0);
         recycler.init_items(&item_factory);
 
         let cell = field.get_cell_mut(IVec2::new(1, 1)).unwrap();
@@ -58,9 +56,8 @@ impl Location {
         let mut tb = TransportBelt::from_json_object(&tbs[0]);
             // setup
         tb.set_config(vec![Direction::Left, Direction::Up], Direction::Right);
-        tb.position = IVec2::new(1, 0);
             // setup 
-        let cell = field.get_cell_mut(tb.position).unwrap();
+        let cell = field.get_cell_mut(IVec2::new(1, 0)).unwrap();
         cell.build(Box::from(tb));
         // DEBUG TRANSPORT BELT
         let json_asset = AssetManager::get_asset_id("dictionaries/transport_belts.json");
@@ -71,9 +68,8 @@ impl Location {
         let mut tb = TransportBelt::from_json_object(&tbs[0]);
             // setup
         tb.set_config(vec![Direction::Left], Direction::Up);
-        tb.position = IVec2::new(2, 0);
             // setup 
-        let cell = field.get_cell_mut(tb.position).unwrap();
+        let cell = field.get_cell_mut(IVec2::new(2, 0)).unwrap();
         cell.build(Box::from(tb));
         // DEBUG TRANSPORT BELT
         let json_asset = AssetManager::get_asset_id("dictionaries/transport_belts.json");
@@ -84,35 +80,8 @@ impl Location {
         let mut tb = TransportBelt::from_json_object(&tbs[0]);
             // setup
         tb.set_config(vec![Direction::Down], Direction::Up);
-        tb.position = IVec2::new(2, 1);
             // setup 
-        let cell = field.get_cell_mut(tb.position).unwrap();
-        cell.build(Box::from(tb));
-        // DEBUG TRANSPORT BELT
-        let json_asset = AssetManager::get_asset_id("dictionaries/transport_belts.json");
-        let json = asset_manager.get_json(json_asset);
-        let tbs = serde_json::from_str(json.as_ref()).unwrap();
-        let mut err = false;
-        let tbs = crate::common::json_reader::JsonReader::read_vec(&tbs, "transport_belts", &mut err);
-        let mut tb = TransportBelt::from_json_object(&tbs[0]);
-            // setup
-        tb.set_config(vec![Direction::Down], Direction::Left);
-        tb.position = IVec2::new(2, 2);
-            // setup 
-        let cell = field.get_cell_mut(tb.position).unwrap();
-        cell.build(Box::from(tb));
-        // DEBUG TRANSPORT BELT
-        let json_asset = AssetManager::get_asset_id("dictionaries/transport_belts.json");
-        let json = asset_manager.get_json(json_asset);
-        let tbs = serde_json::from_str(json.as_ref()).unwrap();
-        let mut err = false;
-        let tbs = crate::common::json_reader::JsonReader::read_vec(&tbs, "transport_belts", &mut err);
-        let mut tb = TransportBelt::from_json_object(&tbs[0]);
-            // setup
-        tb.set_config(vec![Direction::Right], Direction::Left);
-        tb.position = IVec2::new(1, 2);
-            // setup 
-        let cell = field.get_cell_mut(tb.position).unwrap();
+        let cell = field.get_cell_mut(IVec2::new(2, 1)).unwrap();
         cell.build(Box::from(tb));
          
         Location { field }
@@ -128,7 +97,7 @@ impl GameEntity for Location {
         self.field.tick(tick_id);
     }
 
-    fn render(&mut self, renderer : &mut Renderer) {
-        self.field.render(renderer);
+    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
+        self.field.render(renderer, transform);
     }
 }

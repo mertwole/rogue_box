@@ -5,7 +5,7 @@ struct ErrorBuilding { }
 impl GameEntity for ErrorBuilding {
     fn update(&mut self, parameters : &UpdateParameters) { }
     fn tick(&mut self, tick_id : u32) { }
-    fn render(&mut self, renderer : &mut Renderer) { }
+    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) { }
 }
 
 impl BuildingClone for ErrorBuilding {

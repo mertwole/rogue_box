@@ -7,13 +7,12 @@ use crate::game::renderer::{Renderer, Sprite};
 use crate::game::game_entity::GameEntity;
 use crate::game::building::transport_belt::TransportedItem;
 use crate::common::asset_manager::{AssetId, AssetManager};
-use crate::common::math::Vec2;
 use crate::common::json_reader::JsonReader;
+use crate::game::location::surface::*;
 
 pub struct Recycler {
     name : String,
     texture : AssetId,
-    /*DEBUG*/ pub position : Vec2,
 
     period : u32,
     from_last_production : u32,
@@ -26,6 +25,10 @@ pub struct Recycler {
     item_output_buf : HashMap<ItemId, u32>,
 
     item_prototypes : HashMap<ItemId, Item>
+}
+
+enum PlacementRequirement {
+    RequireSurfaces(Vec<SurfaceId>)
 }
 
 impl Recycler {
@@ -85,7 +88,6 @@ impl Recycler {
         Recycler {
             name,
             texture,
-            position : Vec2::zero(),
 
             period,
             from_last_production : 0,
@@ -148,10 +150,9 @@ impl GameEntity for Recycler {
         } 
     }
 
-    fn render(&mut self, renderer : &mut Renderer) {
+    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
         let mut sprite = Sprite::new(self.texture);
-        sprite.position = self.position;
-        renderer.queue_render_sprite(&sprite);
+        renderer.queue_render_sprite(sprite, transform);
     }
 }
 
@@ -166,7 +167,6 @@ impl BuildingClone for Recycler {
             Recycler {
                 name : self.name.clone(),
                 texture : self.texture,
-                position : self.position,
 
                 period : self.period,
                 from_last_production : 0,
@@ -199,8 +199,9 @@ impl MessageSender for Recycler {
             for _ in  0..item_count {
                 messages.push(Message {
                     id : messages.len() as u32,
-                    sender : self.position.to_ivec2(),
-                    receiver : Receiver::Broadcast,
+                    sender : MessageExchangeActor::NotComputedYet,
+                    receiver : MessageExchangeActor::NotComputedYet,
+                    target : Target::Broadcast,
                     tick_id,
                     body : MessageBody::PushItem(TransportedItem::new(item_prototype.clone()))
                 });

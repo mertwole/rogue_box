@@ -5,15 +5,13 @@ use std::hash::{Hash, Hasher};
 extern crate serde_json;
 
 use super::Resource;
-use crate::common::asset_manager::{AssetManager, AssetId};
+use crate::common::asset_manager::AssetManager;
 use crate::game::game_entity::*;
 use crate::common::math::Vec2;
 use crate::game::renderer::{Renderer, Sprite};
 
 #[derive(PartialEq, Eq, Copy, Clone, Hash)]
 pub struct ItemId(u64);
-#[derive(PartialEq, Eq, Copy, Clone, Hash)]
-struct TickId(u32);
 
 #[derive(Clone)]
 struct ItemMovement {
@@ -90,14 +88,14 @@ impl GameEntity for Item {
     fn update(&mut self, parameters : &UpdateParameters) {
         match &self.movement {
             None => {
-                self.sprite.position = Vec2::zero();
+                self.sprite.local_transform.translation = Vec2::zero();
             }
             Some(movement) => {
                 if movement.tick_id + 1 == parameters.last_tick_id {
                     let interpolation = parameters.from_last_tick / crate::game::TICK_PERIOD;
-                    self.sprite.position = movement.from + (movement.to - movement.from) * interpolation;
+                    self.sprite.local_transform.translation = movement.from + (movement.to - movement.from) * interpolation;
                 } else {
-                    self.sprite.position = movement.to;
+                    self.sprite.local_transform.translation = movement.to;
                 }
             }
         }
@@ -107,8 +105,8 @@ impl GameEntity for Item {
 
     }
 
-    fn render(&mut self, renderer : &mut Renderer) {
-        renderer.queue_render_sprite(&self.sprite);
+    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
+        renderer.queue_render_sprite(self.sprite.clone(), transform);
     }
 }
 

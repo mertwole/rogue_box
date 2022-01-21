@@ -1,25 +1,18 @@
-use std::rc::Rc;
-
 use crate::game::game_entity::*;
-use crate::common::asset_manager::{AssetId, AssetManager};
+use crate::common::asset_manager::AssetManager;
 use crate::game::building::Building;
-use crate::game::building::transport_belt::TransportBelt;
 use crate::game::renderer::{Renderer, Sprite};
-use crate::common::math::IVec2;
 
 pub struct Cell {
-    position : IVec2,
     sprite : Sprite,
     pub building : Option<Box<dyn Building>>
 }
 
 impl Cell {
-    pub fn new(position : IVec2) -> Cell {
+    pub fn new() -> Cell {
         let texture = AssetManager::get_asset_id("textures/surfaces/grass.png");
-        let mut sprite = Sprite::new(texture);
-        sprite.position = position.to_vec2();
+        let sprite = Sprite::new(texture);
         Cell {
-            position,
             sprite,
             building : None
         }
@@ -49,12 +42,12 @@ impl GameEntity for Cell {
         }
     }
 
-    fn render(&mut self, renderer : &mut Renderer) {
-        renderer.queue_render_sprite(&self.sprite);
+    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
+        renderer.queue_render_sprite(self.sprite.clone(), transform.clone());
         
         match self.building.as_mut() {
             Some(building) => { 
-                building.render(renderer); 
+                building.render(renderer, transform); 
             }
             _ => { }
         }

@@ -1,4 +1,5 @@
 pub use crate::game::renderer::Renderer;
+pub use crate::game::renderer::SpriteTransform;
 
 pub struct UpdateParameters {
     pub delta_time : f32,
@@ -9,5 +10,5 @@ pub struct UpdateParameters {
 pub trait GameEntity { 
     fn update(&mut self, parameters : &UpdateParameters);
     fn tick(&mut self, tick_id : u32);
-    fn render(&mut self, renderer : &mut Renderer);
+    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform);
 }

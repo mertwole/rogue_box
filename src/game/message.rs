@@ -5,15 +5,33 @@ use crate::common::direction::Direction;
 pub struct Message {
     // Id local for sender.
     pub id : u32,
-    pub sender : IVec2,
-    pub receiver : Receiver,
+    pub sender : MessageExchangeActor,
+    pub receiver : MessageExchangeActor,
+    pub target : Target,
     pub tick_id : u32,
     pub body : MessageBody
 }
 
-pub enum Receiver {
+pub enum Target {
     Direction(Direction),
     Broadcast
+}
+
+pub enum MessageExchangeActor {
+    AtPosition(IVec2),
+    NotComputedYet
+}
+
+impl MessageExchangeActor {
+    pub fn get_pos(&self) -> IVec2 {
+        match self {
+            MessageExchangeActor::AtPosition(pos) => { *pos }
+            MessageExchangeActor::NotComputedYet => { 
+                log::warn!("Trying to get MessageExchangeActor position when it's not computed.");
+                IVec2::zero() 
+            }
+        }
+    }
 }
 
 pub enum MessageBody {
@@ -30,8 +48,7 @@ pub struct MessageSendResult {
     // If message is Some it means that message is received by receiver
     // elsewhere it failed to send.
     pub message : Option<Message>,
-    pub tick_id : u32,
-    pub computed_receiver : Option<IVec2>
+    pub tick_id : u32
 }
 
 pub trait MessageSender {

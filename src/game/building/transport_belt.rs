@@ -41,9 +41,7 @@ pub struct TransportBelt {
     pub/*DEBUG*/ item_buffers : HashMap<Direction, Vec<Option<TransportedItem>>>,
     // Item count on the one side of the belt
     // so max capacity of belt = item_count * 4.
-    item_count : u32,
-
-    pub /*DEBUG*/ position : IVec2
+    item_count : u32
 }
 
 impl TransportBelt {
@@ -65,8 +63,7 @@ impl TransportBelt {
             inputs : Vec::new(),
             output : Direction::None,
             item_buffers : HashMap::new(),
-            item_count,
-            position : IVec2::zero()
+            item_count
         }    
     }
 
@@ -88,7 +85,7 @@ impl TransportBelt {
         } else {
             self.item_count as f32 - vec_id as f32
         };
-        self.position.to_vec2() + rel_pos
+        rel_pos
     }
 
     fn move_buffer_items(&mut self, direction : Direction, tick_id : u32) {
@@ -208,12 +205,12 @@ impl GameEntity for TransportBelt {
         }
     }
 
-    fn render(&mut self, renderer : &mut Renderer) {
+    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
         for dir in self.inputs.iter().chain(iter::once(&self.output)) {
             let buffer = self.item_buffers.get_mut(dir).unwrap();
             for item in buffer {
                 match item {
-                    Some(item) => { item.item.render(renderer); }
+                    Some(item) => { item.item.render(renderer, transform.clone()); }
                     None => { }
                 }
             }
@@ -228,8 +225,7 @@ impl BuildingClone for TransportBelt {
             inputs : Vec::new(),
             output : Direction::None,
             item_buffers : HashMap::new(),
-            item_count : self.item_count,
-            position : IVec2::zero()
+            item_count : self.item_count
         })
     }
 }
@@ -249,8 +245,9 @@ impl MessageSender for TransportBelt {
                 vec![ 
                         Message { 
                             id : 0,
-                            sender : self.position, 
-                            receiver : Receiver::Direction(self.output), 
+                            sender : MessageExchangeActor::NotComputedYet, 
+                            receiver : MessageExchangeActor::NotComputedYet, 
+                            target : Target::Direction(self.output),
                             tick_id,
                             body : MessageBody::PushItem(item) 
                         }
@@ -287,7 +284,7 @@ impl MessageReceiver for TransportBelt {
                     message.body = MessageBody::PushItem(item); 
                     return Some(message); 
                 }
-                let direction = Direction::from_ivec2(message.sender - self.position);
+                let direction = Direction::from_ivec2(message.sender.get_pos() - message.receiver.get_pos());
                 let push_result = self.try_push_item(item, direction, message.tick_id);
                 match push_result {
                     Some(item) => {

@@ -91,7 +91,8 @@ impl EventHandler for Game {
     fn draw(&mut self, context: &mut Context) -> GameResult<()> {
         graphics::clear(context, Color::WHITE);
         
-        self.location.render(&mut self.renderer);
+        let transform = SpriteTransform::default();
+        self.location.render(&mut self.renderer, transform);
 
         self.renderer.render_to_screen(context, &self.asset_manager, &self.camera);
 

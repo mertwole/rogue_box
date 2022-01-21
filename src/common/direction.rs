@@ -29,4 +29,14 @@ impl Direction {
             _ => { Direction::None }
         } 
     }
+
+    pub fn negate(&self) -> Direction {
+        match self {
+            Direction::Up =>    Direction::Down,
+            Direction::Down =>  Direction::Up,
+            Direction::Left =>  Direction::Right,
+            Direction::Right => Direction::Left,
+            Direction::None =>  Direction::None
+        }
+    }
 }
