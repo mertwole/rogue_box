@@ -1,0 +1,37 @@
+{
+    "miners" : [
+        {
+            "name" : "basic miner",
+            "texture" : "textures/buildings/building.png",
+            
+            "surfaces" : [
+                { 
+                    "surface" : "stone",
+                    "recycler" : {
+                        "name" : "",
+                        "texture" : "",
+                        "period" : 2,
+            
+                        "items" : {
+                            "input" : [ ],
+                            "output" : [ { "item" : "iron", "amount" : 1 } ]
+                        }
+                    }
+                },
+                { 
+                    "surface" : "grass",
+                    "recycler" : {
+                        "name" : "",
+                        "texture" : "",
+                        "period" : 2,
+            
+                        "items" : {
+                            "input" : [ ],
+                            "output" : [ { "item" : "copper", "amount" : 1 } ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

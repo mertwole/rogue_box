@@ -5,6 +5,7 @@ use crate::game::renderer::Renderer;
 
 use crate::game::building::transport_belt::TransportBelt;
 use crate::game::resource::item::ItemFactory;
+use crate::game::location::surface::SurfaceFactory;
 
 use crate::common::direction::Direction;
 
@@ -20,22 +21,22 @@ pub struct Location {
 
 impl Location {
     pub fn new(asset_manager : &AssetManager) -> Location {
-        let mut field = Field::new(IVec2::new(-10, -10), IVec2::new(10, 10));
+        let mut field = Field::new(IVec2::new(-10, -10), IVec2::new(10, 10), asset_manager);
 
         let items_dict = AssetManager::get_asset_id("dictionaries/items.json");
         let item_factory = ItemFactory::new(asset_manager.get_json(items_dict));
 
-        // DEBUG RECYCLER
-        let json_asset = AssetManager::get_asset_id("dictionaries/recyclers.json");
+        // DEBUG MINER
+        let json_asset = AssetManager::get_asset_id("dictionaries/miners.json");
         let json = asset_manager.get_json(json_asset);
-        let recyclers = serde_json::from_str(json.as_ref()).unwrap();
+        let miners = serde_json::from_str(json.as_ref()).unwrap();
         let mut err = false;
-        let recyclers = crate::common::json_reader::JsonReader::read_vec(&recyclers, "recyclers", &mut err);
-        let mut recycler = crate::game::building::recycler::Recycler::from_json_object(&recyclers[0]);
-        recycler.init_items(&item_factory);
+        let miners = crate::common::json_reader::JsonReader::read_vec(&miners, "miners", &mut err);
+        let mut miner = crate::game::building::miner::Miner::from_json_object(&miners[0]);
+        miner.init(SurfaceFactory::get_surface_id_by_name("grass"), &item_factory);
 
         let cell = field.get_cell_mut(IVec2::new(0, 0)).unwrap();
-        cell.build(Box::from(recycler));
+        cell.build(Box::from(miner));
         // DEBUG RECYCLER
         let json_asset = AssetManager::get_asset_id("dictionaries/recyclers.json");
         let json = asset_manager.get_json(json_asset);

@@ -1,19 +1,17 @@
 use crate::game::game_entity::*;
-use crate::common::asset_manager::AssetManager;
 use crate::game::building::Building;
-use crate::game::renderer::{Renderer, Sprite};
+use crate::game::renderer::Renderer;
+use super::surface::Surface;
 
 pub struct Cell {
-    sprite : Sprite,
+    surface : Surface,
     pub building : Option<Box<dyn Building>>
 }
 
 impl Cell {
-    pub fn new() -> Cell {
-        let texture = AssetManager::get_asset_id("textures/surfaces/grass.png");
-        let sprite = Sprite::new(texture);
+    pub fn new(surface : Surface) -> Cell {
         Cell {
-            sprite,
+            surface,
             building : None
         }
     }
@@ -43,8 +41,8 @@ impl GameEntity for Cell {
     }
 
     fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
-        renderer.queue_render_sprite(self.sprite.clone(), transform.clone());
-        
+        self.surface.render(renderer, transform.clone());
+
         match self.building.as_mut() {
             Some(building) => { 
                 building.render(renderer, transform); 

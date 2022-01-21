@@ -3,6 +3,8 @@ use crate::common::direction::Direction;
 use crate::game::game_entity::*;
 use crate::game::renderer::Renderer;
 use crate::game::message::*;
+use crate::game::location::surface::*;
+use crate::common::asset_manager::AssetManager;
 
 use super::cell::Cell;
 
@@ -14,14 +16,20 @@ pub struct Field {
 }
 
 impl Field {
-    pub fn new(min_coord : IVec2, max_coord : IVec2) -> Field {
+    pub fn new(min_coord : IVec2, max_coord : IVec2, asset_manager : &AssetManager) -> Field {
+        let surface_json = AssetManager::get_asset_id("dictionaries/surfaces.json");
+        let surface_dict = asset_manager.get_json(surface_json);
+        let surface_factory = SurfaceFactory::new(surface_dict);
+        let grass_surface_id = SurfaceFactory::get_surface_id_by_name("grass");
+        let grass_surface = surface_factory.create_surface(grass_surface_id);
+
         let x_count = (max_coord.x - min_coord.x) as usize;
         let y_count = (max_coord.y - min_coord.y) as usize;
         let mut cells = Vec::with_capacity(x_count);
         for _ in 0..x_count {
             let mut cells_row = Vec::with_capacity(y_count);
             for _ in 0..y_count {
-                cells_row.push(Cell::new());
+                cells_row.push(Cell::new(grass_surface.clone()));
             }
             cells.push(cells_row);
         }

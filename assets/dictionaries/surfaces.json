@@ -1,0 +1,6 @@
+[
+    { 
+        "name" : "grass",
+        "texture" : "textures/surfaces/grass.png"
+    }
+]

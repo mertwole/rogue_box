@@ -27,10 +27,6 @@ pub struct Recycler {
     item_prototypes : HashMap<ItemId, Item>
 }
 
-enum PlacementRequirement {
-    RequireSurfaces(Vec<SurfaceId>)
-}
-
 impl Recycler {
     pub fn from_json_object(obj : &serde_json::Value) -> Recycler {
         let mut error = false;

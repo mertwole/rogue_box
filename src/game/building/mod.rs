@@ -3,6 +3,7 @@ use crate::game::renderer::Renderer;
 use crate::game::message::*;
 
 pub mod recycler;
+pub mod miner;
 pub mod transport_belt;
 pub mod error_building;
 

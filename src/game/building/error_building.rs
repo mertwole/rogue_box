@@ -3,9 +3,9 @@ use super::*;
 struct ErrorBuilding { }
 
 impl GameEntity for ErrorBuilding {
-    fn update(&mut self, parameters : &UpdateParameters) { }
-    fn tick(&mut self, tick_id : u32) { }
-    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) { }
+    fn update(&mut self, _parameters : &UpdateParameters) { }
+    fn tick(&mut self, _tick_id : u32) { }
+    fn render(&mut self, _renderer : &mut Renderer, _transform : SpriteTransform) { }
 }
 
 impl BuildingClone for ErrorBuilding {
@@ -21,11 +21,11 @@ impl ErrorBuilding {
 }
 
 impl MessageSender for ErrorBuilding {
-    fn pull_messages(&mut self, tick_id : u32) -> Vec<Message> {
+    fn pull_messages(&mut self, _tick_id : u32) -> Vec<Message> {
         Vec::new()
     }
 
-    fn message_send_result(&mut self, result : MessageSendResult) { }
+    fn message_send_result(&mut self, _result : MessageSendResult) { }
 }
 
 impl MessageReceiver for ErrorBuilding {
