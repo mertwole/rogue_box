@@ -4,7 +4,6 @@ use std::hash::{Hash, Hasher};
 
 extern crate serde_json;
 
-use super::Resource;
 use crate::common::asset_manager::AssetManager;
 use crate::game::game_entity::*;
 use crate::common::math::Vec2;
@@ -119,8 +118,6 @@ impl Clone for Item {
         }
     }
 }
-
-impl Resource for Item { }
 
 pub struct ItemFactory {
     items : HashMap<ItemId, Item>

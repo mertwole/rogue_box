@@ -6,7 +6,6 @@ use super::recycler::Recycler;
 use crate::game::resource::item::*;
 use crate::game::renderer::{Renderer, Sprite};
 use crate::game::game_entity::GameEntity;
-use crate::game::building::transport_belt::TransportedItem;
 use crate::common::asset_manager::{AssetId, AssetManager};
 use crate::common::json_reader::JsonReader;
 use crate::game::location::surface::*;
@@ -69,6 +68,14 @@ impl BuildingClone for Miner {
 impl Building for Miner {
     fn get_name(&self) -> &str { 
         self.name.as_str()
+    }
+
+    fn get_electric_ports_mut(&mut self) -> Vec<&mut dyn ElectricPort> { 
+        vec![] 
+    }
+
+    fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> { 
+        vec![] 
     }
 }
 

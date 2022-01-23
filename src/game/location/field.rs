@@ -98,11 +98,28 @@ impl Field {
             Target::Direction(dir) => { 
                 vec![message.sender.get_pos() + dir.to_ivec2()] 
             }
-            Target::Broadcast => { 
+            Target::BroadcastNeighbors => { 
                 vec![   message.sender.get_pos() + Direction::Up.to_ivec2(),
                         message.sender.get_pos() + Direction::Right.to_ivec2(),
                         message.sender.get_pos() + Direction::Down.to_ivec2(),
                         message.sender.get_pos() + Direction::Left.to_ivec2()]
+            }
+            Target::BroadcastAllConnectedElectricInputs => {
+                let sender_cell = self.get_cell_mut_unchecked(message.sender.get_pos());
+                let sender_building = sender_cell.building.as_ref().unwrap().as_ref();
+                let mut connected = Vec::new();
+                let sender_ports = sender_building.get_electric_ports();
+
+                for port in sender_ports {
+                    match port.as_output() {
+                        Some(out) => { 
+                            connected.append(&mut out.get_connected_inputs().clone());
+                        }
+                        None => { } 
+                    }
+                }
+
+                connected
             }
         };
 

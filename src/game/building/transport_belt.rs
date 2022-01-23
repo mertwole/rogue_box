@@ -234,6 +234,14 @@ impl Building for TransportBelt {
     fn get_name(&self) -> &str {
         &self.name
     }
+
+    fn get_electric_ports_mut(&mut self) -> Vec<&mut dyn ElectricPort> { 
+        vec![] 
+    }
+
+    fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> { 
+        vec![] 
+    }
 }
 
 impl MessageSender for TransportBelt {

@@ -1,6 +1,7 @@
 use crate::common::math::IVec2;
 use crate::game::building::transport_belt::TransportedItem;
 use crate::common::direction::Direction;
+use crate::game::building::electric_port::WattTick;
 
 pub struct Message {
     // Id local for sender.
@@ -14,7 +15,8 @@ pub struct Message {
 
 pub enum Target {
     Direction(Direction),
-    Broadcast
+    BroadcastNeighbors,
+    BroadcastAllConnectedElectricInputs
 }
 
 pub enum MessageExchangeActor {
@@ -35,7 +37,8 @@ impl MessageExchangeActor {
 }
 
 pub enum MessageBody {
-    PushItem(TransportedItem)
+    PushItem(TransportedItem),
+    SendElectricity(WattTick)
 }
 
 pub trait MessageReceiver {

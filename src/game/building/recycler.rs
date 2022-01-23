@@ -184,6 +184,14 @@ impl Building for Recycler {
     fn get_name(&self) -> &str {
         &self.name
     }
+
+    fn get_electric_ports_mut(&mut self) -> Vec<&mut dyn ElectricPort> { 
+        vec![]
+    }
+
+    fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> { 
+        vec![] 
+    }
 }
 
 impl MessageSender for Recycler {
@@ -197,7 +205,7 @@ impl MessageSender for Recycler {
                     id : messages.len() as u32,
                     sender : MessageExchangeActor::NotComputedYet,
                     receiver : MessageExchangeActor::NotComputedYet,
-                    target : Target::Broadcast,
+                    target : Target::BroadcastNeighbors,
                     tick_id,
                     body : MessageBody::PushItem(TransportedItem::new(item_prototype.clone()))
                 });

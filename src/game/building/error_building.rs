@@ -14,6 +14,8 @@ impl BuildingClone for ErrorBuilding {
 
 impl Building for ErrorBuilding {
     fn get_name(&self) -> &str { "error" }
+    fn get_electric_ports_mut(&mut self) -> Vec<&mut dyn ElectricPort> { vec![] }
+    fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> { vec![] }
 }
 
 impl ErrorBuilding {
