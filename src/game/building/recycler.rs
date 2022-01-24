@@ -91,9 +91,10 @@ impl Recycler {
             let energy = WattTick::new(energy);
 
             let mode = JsonReader::read_string(&port_obj, "mode", error);
+            let port_id = PortId::new(self.electric_ports.len() as u32);
             let port : Box<dyn ElectricPort> = match &*mode {
-                "in" => { Box::from(ElectricInput::new(voltage, energy)) }
-                "out" => { Box::from(ElectricOutput::new(voltage, energy)) }
+                "in" => { Box::from(ElectricInput::new(voltage, energy, port_id)) }
+                "out" => { Box::from(ElectricOutput::new(voltage, energy, port_id)) }
                 _ => { *error = true; return; }
             };
 
@@ -300,17 +301,36 @@ impl MessageSender for Recycler {
 
         self.drain_output();
 
+        for port in &mut self.electric_ports {
+            match port.as_mut().as_output_mut() {
+                Some(out) => { messages.append(&mut out.pull_messages(tick_id)); }
+                None => { }
+            }
+        }
+
         messages
     }
 
     fn message_send_result(&mut self, result : MessageSendResult) { 
-        match result.message {
+        match &result.message {
             Some(message) => { 
                 match &message.body {
                     MessageBody::PushItem(item) => {
                         *self.item_output_buf.get_mut(&item.get_id()).unwrap() += 1;
                     }
-                    _ => { }
+                    MessageBody::SendElectricity(_, id) => { 
+                        for port in &mut self.electric_ports {
+                            if port.get_id() == *id {
+                                match port.as_mut().as_output_mut() {
+                                    Some(out) => { 
+                                        out.message_send_result(result);
+                                        return;
+                                    }
+                                    None => { }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             None => { return; }
@@ -319,7 +339,34 @@ impl MessageSender for Recycler {
 }
 
 impl MessageReceiver for Recycler {
-    fn try_push_message(&mut self, message : Message) -> Option<Message> {
-        Some(message)
+    fn try_push_message(&mut self, mut message : Message) -> Option<Message> {
+        match &message.body {
+            MessageBody::PushItem(item) => { 
+                let item_id = item.get_id();
+                if self.item_input.contains_key(&item_id) {
+                    let inp_buf = self.item_input_buf.get_mut(&item_id).unwrap();
+                    if *inp_buf < *self.item_input.get(&item_id).unwrap() {
+                        *inp_buf += 1;
+                        return None;
+                    }
+                }
+                Some(message)
+            }
+            _ => {
+                for port in &mut self.electric_ports {
+                    match port.as_input_mut() {
+                        Some(inp) => { 
+                            message = match inp.try_push_message(message) {
+                                Some(back) => { back }
+                                None => { return None; }
+                            }
+                        }
+                        None => { }
+                    }
+                }
+
+                Some(message)
+            }
+        }
     }
 }
