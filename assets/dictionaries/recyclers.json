@@ -8,7 +8,26 @@
             "items" : {
                 "input" : [ ],
                 "output" : [ { "item" : "iron", "amount" : 1 } ]
-            }
+            },
+
+            "electric_ports" : [
+                { "mode" : "in", "voltage" : 5, "energy" : 5 }
+            ]
+        },
+
+        {
+            "name" : "generator",
+            "texture" : "textures/buildings/building.png",
+            "period" : 1,
+
+            "items" : {
+                "input" : [ ],
+                "output" : [ ]
+            },
+
+            "electric_ports" : [
+                { "mode" : "out", "voltage" : 5, "energy" : 5 }
+            ]
         }
     ]   
 }

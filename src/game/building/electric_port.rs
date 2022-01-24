@@ -18,12 +18,16 @@ impl WattTick {
     }
 }
 
-pub trait ElectricPort { 
+pub trait ElectricPort : ElectricPortClone{ 
     fn as_input(&self) -> Option<&ElectricInput>;
     fn as_output(&self) -> Option<&ElectricOutput>;
 
     fn as_input_mut(&mut self) -> Option<&mut ElectricInput>;
     fn as_output_mut(&mut self) -> Option<&mut ElectricOutput>;
+}
+
+pub trait ElectricPortClone {
+    fn clone_box(&self) -> Box<dyn ElectricPort>;
 }
 
 pub struct ElectricInput {
@@ -52,6 +56,22 @@ impl ElectricInput {
         let stored = self.buffer;
         self.buffer = WattTick(0);
         stored
+    }
+
+    pub(in crate::game::building) fn is_full(&self) -> bool {
+        self.buffer >= self.request
+    }
+}
+
+impl ElectricPortClone for ElectricInput {
+    fn clone_box(&self) -> Box<dyn ElectricPort> {
+        Box::from(
+            ElectricInput {
+                buffer : self.buffer,
+                request : self.request,
+                voltage : self.voltage
+            }
+        )
     }
 }
 
@@ -124,6 +144,10 @@ impl ElectricOutput {
         }
     }
 
+    pub(in crate::game::building) fn fill(&mut self) {
+        self.buffer = self.throughput;
+    }
+
     pub fn get_connected_inputs(&self) -> &Vec<IVec2> {
         &self.connected_inputs
     }
@@ -157,6 +181,19 @@ impl MessageSender for ElectricOutput {
             }
             None => { self.buffer = WattTick(0); }
         }
+    }
+}
+
+impl ElectricPortClone for ElectricOutput {
+    fn clone_box(&self) -> Box<dyn ElectricPort> {
+        Box::from(
+            ElectricOutput {
+                buffer : self.buffer,
+                throughput : self.throughput,
+                voltage : self.voltage,
+                connected_inputs : self.connected_inputs.clone()
+            }
+        )
     }
 }
 

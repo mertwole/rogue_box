@@ -12,6 +12,12 @@ const RESOURCES_DIR : Dir = include_dir!("./assets");
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 pub struct AssetId(u64);
 
+impl AssetId {
+    pub fn null() -> AssetId {
+        AssetId(0)
+    }
+}
+
 pub struct AssetManager {
     textures : HashMap<AssetId, Rc<Image>>,
     jsons : HashMap<AssetId, Rc<str>>
