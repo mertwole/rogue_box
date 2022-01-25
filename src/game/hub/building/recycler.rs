@@ -2,13 +2,13 @@ use std::collections::HashMap;
 
 use super::*;
 
-use crate::game::resource::item::*;
+use crate::game::hub::item::*;
 use crate::game::renderer::{Renderer, Sprite};
 use crate::game::game_entity::GameEntity;
-use crate::game::building::transport_belt::TransportedItem;
-use crate::common::asset_manager::{AssetId, AssetManager};
-use crate::common::json_reader::JsonReader;
-use crate::game::building::electric_port::*;
+use crate::game::hub::item::TransportedItem;
+use crate::game::common::asset_manager::{AssetId, AssetManager};
+use crate::game::common::json_reader::JsonReader;
+use crate::game::hub::electric_port::*;
 
 pub struct Recycler {
     name : String,

@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use super::*;
 use super::recycler::Recycler;
 
-use crate::game::resource::item::*;
+use crate::game::hub::item::*;
 use crate::game::renderer::{Renderer, Sprite};
 use crate::game::game_entity::GameEntity;
-use crate::common::asset_manager::{AssetId, AssetManager};
-use crate::common::json_reader::JsonReader;
-use crate::game::location::surface::*;
+use crate::game::common::asset_manager::{AssetId, AssetManager};
+use crate::game::common::json_reader::JsonReader;
+use crate::game::hub::location::surface::*;
 
 pub struct Miner { 
     name : String,

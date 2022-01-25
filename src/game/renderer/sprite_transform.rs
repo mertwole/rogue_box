@@ -1,4 +1,4 @@
-use crate::common::math::Vec2;
+use crate::game::common::math::Vec2;
 
 #[derive(Clone)]
 pub struct SpriteTransform {

@@ -2,20 +2,18 @@ use ggez::{Context, GameResult};
 use ggez::graphics::{self, Color};
 use ggez::event::EventHandler;
 
-use crate::common::math::IVec2;
-use crate::common::asset_manager::AssetManager;
+use common::math::IVec2;
+use common::asset_manager::AssetManager;
 
-pub mod location;
-pub mod building;
-pub mod resource;
 pub mod game_entity;
 pub mod renderer;
-pub mod message;
+pub mod hub;
+pub mod common;
 
-use location::Location;
+use hub::location::Location;
+use hub::item::*;
 use game_entity::*;
 use renderer::{Renderer, camera::Camera};
-use resource::item::*;
 
 pub const TICK_PERIOD : f32 = 1.0;
 

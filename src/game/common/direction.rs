@@ -1,4 +1,4 @@
-use crate::common::math::IVec2;
+use crate::game::common::math::IVec2;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Direction {

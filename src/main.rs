@@ -4,12 +4,11 @@ use ggez::{event, ContextBuilder};
 use ggez::conf::WindowSetup;
 
 mod game;
-pub mod common;
 
 use game::Game;
 
 fn main() {
-    common::logger::init().unwrap();
+    game::common::logger::init().unwrap();
 
     let window_setup = WindowSetup::default().title("");
 

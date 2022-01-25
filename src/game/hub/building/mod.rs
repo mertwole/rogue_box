@@ -1,13 +1,12 @@
 use crate::game::game_entity::*;
 use crate::game::renderer::Renderer;
-use crate::game::message::*;
-use electric_port::ElectricPort;
+use crate::game::hub::message::*;
+use crate::game::hub::electric_port::ElectricPort;
 
 pub mod recycler;
 pub mod miner;
 pub mod transport_belt;
 pub mod error_building;
-pub mod electric_port;
 
 pub trait BuildingClone {
     fn clone_box(&self) -> Box<dyn Building>;

@@ -1,5 +1,5 @@
 use crate::game::game_entity::*;
-use crate::game::building::Building;
+use crate::game::hub::building::Building;
 use crate::game::renderer::Renderer;
 use super::surface::Surface;
 

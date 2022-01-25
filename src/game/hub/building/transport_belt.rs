@@ -2,31 +2,11 @@ use std::collections::HashMap;
 use std::iter;
 
 use super::*;
-use crate::game::game_entity::*;
-use crate::game::resource::item::*;
-use crate::common::direction::Direction;
-use crate::common::json_reader::JsonReader;
-use crate::common::math::{Vec2, IVec2};
-use crate::game::message::*;
-
-pub struct TransportedItem {
-    item : Item,
-    // Item can be moved by transport belts only once per tick.
-    last_tick_moved : u32
-}
-
-impl TransportedItem {
-    pub fn new(item : Item) -> TransportedItem {
-        TransportedItem {
-            item,
-            last_tick_moved : std::u32::MAX
-        }
-    } 
-
-    pub fn get_id(&self) -> ItemId {
-        self.item.get_id()
-    }
-}
+use crate::game::hub::item::*;
+use crate::game::common::direction::Direction;
+use crate::game::common::json_reader::JsonReader;
+use crate::game::common::math::Vec2;
+use crate::game::hub::message::*;
 
 pub struct TransportBelt { 
     name : String,

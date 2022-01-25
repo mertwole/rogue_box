@@ -1,4 +1,4 @@
-use crate::common::math::{Vec2, IVec2};
+use crate::game::common::math::{Vec2, IVec2};
 
 pub struct Camera {
     cell_size : f32,

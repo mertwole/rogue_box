@@ -1,4 +1,4 @@
-use crate::common::asset_manager::AssetId;
+use crate::game::common::asset_manager::AssetId;
 
 use super::SpriteTransform;
 

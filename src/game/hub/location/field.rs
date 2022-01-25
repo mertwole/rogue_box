@@ -1,10 +1,10 @@
-use crate::common::math::IVec2;
-use crate::common::direction::Direction;
+use crate::game::common::math::IVec2;
+use crate::game::common::direction::Direction;
 use crate::game::game_entity::*;
 use crate::game::renderer::Renderer;
-use crate::game::message::*;
-use crate::game::location::surface::*;
-use crate::common::asset_manager::AssetManager;
+use crate::game::hub::message::*;
+use crate::game::hub::location::surface::*;
+use crate::game::common::asset_manager::AssetManager;
 
 use super::cell::Cell;
 

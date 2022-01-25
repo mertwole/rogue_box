@@ -1,8 +1,8 @@
 use ggez::{Context, graphics};
 use ggez::mint::{Point2, Vector2};
 
-use crate::common::math::Vec2;
-use crate::common::asset_manager::AssetManager;
+use crate::game::common::math::Vec2;
+use crate::game::common::asset_manager::AssetManager;
 
 pub mod camera;
 pub mod sprite_transform;
