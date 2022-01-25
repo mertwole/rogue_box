@@ -52,7 +52,7 @@ impl Field {
     }
 
     fn push_message_back(&mut self, message : Message) {
-        let sender = self.get_cell_mut_unchecked(message.sender.get_pos());
+        let sender = self.get_cell_mut_unchecked(message.sender.get_position());
         let building = sender.building.as_mut().unwrap();
 
         let result = MessageSendResult { 
@@ -65,7 +65,7 @@ impl Field {
     }
 
     fn try_process_message(&mut self, message : Message) -> Option<Message> {
-        let receiver_cell = self.get_cell_mut(message.receiver.get_pos());
+        let receiver_cell = self.get_cell_mut(message.receiver.get_position());
 
         if receiver_cell.is_none() { return Some(message); }
         let receiver_building = &mut receiver_cell.unwrap().building;
@@ -74,7 +74,7 @@ impl Field {
         let receiver_building = receiver_building.as_mut().unwrap();
 
         let tick_id = message.tick_id;
-        let sender_pos = message.sender.get_pos();
+        let sender_pos = message.sender.get_position();
         let message_id = message.id;
         let back_message = receiver_building.try_push_message(message);
         if back_message.is_none() { 
@@ -93,19 +93,23 @@ impl Field {
     }
 
     fn process_message(&mut self, mut message : Message) {
-        let targets = 
+        let receivers : Vec<MessageExchangeActor> = 
         match message.target {
             Target::Direction(dir) => { 
-                vec![message.sender.get_pos() + dir.to_ivec2()] 
+                vec![MessageExchangeActor::at_position(
+                    message.sender.get_position() + dir.to_ivec2()
+                )]
             }
             Target::BroadcastNeighbors => { 
-                vec![   message.sender.get_pos() + Direction::Up.to_ivec2(),
-                        message.sender.get_pos() + Direction::Right.to_ivec2(),
-                        message.sender.get_pos() + Direction::Down.to_ivec2(),
-                        message.sender.get_pos() + Direction::Left.to_ivec2()]
+                vec![   message.sender.get_position() + Direction::Up.to_ivec2(),
+                        message.sender.get_position() + Direction::Right.to_ivec2(),
+                        message.sender.get_position() + Direction::Down.to_ivec2(),
+                        message.sender.get_position() + Direction::Left.to_ivec2()
+                ].into_iter()
+                .map(|pos| MessageExchangeActor::at_position(pos)).collect()
             }
             Target::BroadcastAllConnectedElectricInputs => {
-                let sender_cell = self.get_cell_mut_unchecked(message.sender.get_pos());
+                let sender_cell = self.get_cell_mut_unchecked(message.sender.get_position());
                 let sender_building = sender_cell.building.as_ref().unwrap().as_ref();
                 let mut connected = Vec::new();
                 let sender_ports = sender_building.get_electric_ports();
@@ -113,7 +117,14 @@ impl Field {
                 for port in sender_ports {
                     match port.as_output() {
                         Some(out) => { 
-                            connected.append(&mut out.get_connected_inputs().clone());
+                            let mut actors = out.get_connected_inputs().iter()
+                            .map(|(pos, port_id)| {
+                                let mut actor = MessageExchangeActor::at_position(*pos);
+                                actor.set_electric_port(*port_id);
+                                actor
+                            })
+                            .collect();
+                            connected.append(&mut actors);
                         }
                         None => { } 
                     }
@@ -123,13 +134,13 @@ impl Field {
             }
         };
 
-        for target in targets {
-            message.receiver = MessageExchangeActor::AtPosition(target);
+        for receiver in receivers {
+            message.receiver = receiver;
             message = 
             match self.try_process_message(message) {
                 Some(msg) => { msg }
                 None => { return; }
-            }
+            };
         }
 
         self.push_message_back(message);
@@ -160,7 +171,7 @@ impl GameEntity for Field {
                     Some(building) => { 
                         let messages = building.pull_messages(tick_id);
                         for (message_id, mut message) in messages.into_iter().enumerate() { 
-                            message.sender = MessageExchangeActor::AtPosition(IVec2::new(x, y));
+                            message.sender.set_position(IVec2::new(x, y));
                             message.id = message_id as u32;
                             self.process_message(message); 
                         }

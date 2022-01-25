@@ -3,7 +3,7 @@ use super::*;
 pub struct ElectricOutput {
     id : PortId,
 
-    connected_inputs : Vec<IVec2>,
+    connected_inputs : Vec<(IVec2, PortId)>,
 
     voltage : Voltage,
     throughput : WattTick,
@@ -37,7 +37,11 @@ impl ElectricOutput {
         self.buffer = self.throughput;
     }
 
-    pub fn get_connected_inputs(&self) -> &Vec<IVec2> {
+    pub fn connect(&mut self, pos : IVec2, port_id : PortId) {
+        self.connected_inputs.push((pos, port_id));
+    }
+
+    pub fn get_connected_inputs(&self) -> &Vec<(IVec2, PortId)> {
         &self.connected_inputs
     }
 }
@@ -45,11 +49,13 @@ impl ElectricOutput {
 impl MessageSender for ElectricOutput {
     fn pull_messages(&mut self, tick_id : u32) -> Vec<Message> {
         if self.buffer.0 != 0 {
+            let mut sender = MessageExchangeActor::new();
+            sender.set_electric_port(self.id);
             vec![
                 Message {
                     id : 0,
-                    sender : MessageExchangeActor::NotComputedYet,
-                    receiver : MessageExchangeActor::NotComputedYet,
+                    sender,
+                    receiver : MessageExchangeActor::new(),
                     target : Target::BroadcastAllConnectedElectricInputs,
                     tick_id,
                     body : MessageBody::SendElectricity(self.buffer, self.id)

@@ -19,22 +19,8 @@ pub enum Target {
     BroadcastAllConnectedElectricInputs
 }
 
-pub enum MessageExchangeActor {
-    AtPosition(IVec2),
-    NotComputedYet
-}
-
-impl MessageExchangeActor {
-    pub fn get_pos(&self) -> IVec2 {
-        match self {
-            MessageExchangeActor::AtPosition(pos) => { *pos }
-            MessageExchangeActor::NotComputedYet => { 
-                log::warn!("Trying to get MessageExchangeActor position when it's not computed.");
-                IVec2::zero() 
-            }
-        }
-    }
-}
+mod message_exchange_actor;
+pub use message_exchange_actor::*;
 
 pub enum MessageBody {
     PushItem(TransportedItem),

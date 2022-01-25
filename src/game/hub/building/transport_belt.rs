@@ -233,8 +233,8 @@ impl MessageSender for TransportBelt {
                 vec![ 
                         Message { 
                             id : 0,
-                            sender : MessageExchangeActor::NotComputedYet, 
-                            receiver : MessageExchangeActor::NotComputedYet, 
+                            sender : MessageExchangeActor::new(), 
+                            receiver : MessageExchangeActor::new(), 
                             target : Target::Direction(self.output),
                             tick_id,
                             body : MessageBody::PushItem(item) 
@@ -272,7 +272,7 @@ impl MessageReceiver for TransportBelt {
                     message.body = MessageBody::PushItem(item); 
                     return Some(message); 
                 }
-                let direction = Direction::from_ivec2(message.sender.get_pos() - message.receiver.get_pos());
+                let direction = Direction::from_ivec2(message.sender.get_position() - message.receiver.get_position());
                 let push_result = self.try_push_item(item, direction, message.tick_id);
                 match push_result {
                     Some(item) => {

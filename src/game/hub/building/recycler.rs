@@ -290,8 +290,8 @@ impl MessageSender for Recycler {
             for _ in  0..item_count {
                 messages.push(Message {
                     id : messages.len() as u32,
-                    sender : MessageExchangeActor::NotComputedYet,
-                    receiver : MessageExchangeActor::NotComputedYet,
+                    sender : MessageExchangeActor::new(),
+                    receiver : MessageExchangeActor::new(),
                     target : Target::BroadcastNeighbors,
                     tick_id,
                     body : MessageBody::PushItem(TransportedItem::new(item_prototype.clone()))
