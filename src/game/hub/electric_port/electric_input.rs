@@ -72,9 +72,7 @@ impl ElectricPort for ElectricInput {
 impl MessageReceiver for ElectricInput {
     fn try_push_message(&mut self, mut message : Message) -> Option<Message> {
         match &mut message.body {
-            MessageBody::SendElectricity(amount, id) => {
-                if self.id != *id { return Some(message); }
-
+            MessageBody::SendElectricity(amount) => {
                 let free_space = self.request.0 - self.buffer.0;
                 if free_space == 0 { return Some(message); }
                 if free_space >= amount.0 {

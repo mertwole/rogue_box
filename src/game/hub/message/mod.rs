@@ -24,7 +24,7 @@ pub use message_exchange_actor::*;
 
 pub enum MessageBody {
     PushItem(TransportedItem),
-    SendElectricity(WattTick, PortId)
+    SendElectricity(WattTick)
 }
 
 pub trait MessageReceiver {

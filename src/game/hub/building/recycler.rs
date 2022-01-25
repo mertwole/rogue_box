@@ -318,9 +318,10 @@ impl MessageSender for Recycler {
                     MessageBody::PushItem(item) => {
                         *self.item_output_buf.get_mut(&item.get_id()).unwrap() += 1;
                     }
-                    MessageBody::SendElectricity(_, id) => { 
+                    MessageBody::SendElectricity(_) => { 
+                        let sender_port = message.sender.get_electric_port();
                         for port in &mut self.electric_ports {
-                            if port.get_id() == *id {
+                            if port.get_id() == sender_port {
                                 match port.as_mut().as_output_mut() {
                                     Some(out) => { 
                                         out.message_send_result(result);
@@ -353,7 +354,9 @@ impl MessageReceiver for Recycler {
                 Some(message)
             }
             _ => {
+                let receiver_port = message.receiver.get_electric_port();
                 for port in &mut self.electric_ports {
+                    if port.get_id() != receiver_port { continue; }
                     match port.as_input_mut() {
                         Some(inp) => { 
                             message = match inp.try_push_message(message) {

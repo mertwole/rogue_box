@@ -58,7 +58,7 @@ impl MessageSender for ElectricOutput {
                     receiver : MessageExchangeActor::new(),
                     target : Target::BroadcastAllConnectedElectricInputs,
                     tick_id,
-                    body : MessageBody::SendElectricity(self.buffer, self.id)
+                    body : MessageBody::SendElectricity(self.buffer)
                 }
             ]
         } else { 
@@ -70,7 +70,7 @@ impl MessageSender for ElectricOutput {
         match result.message {
             Some(msg) => {
                 match msg.body {
-                    MessageBody::SendElectricity(remained, id) => { self.buffer = remained; }
+                    MessageBody::SendElectricity(remained) => { self.buffer = remained; }
                     _ => { }
                 }
             }
