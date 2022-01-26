@@ -2,14 +2,16 @@ use ggez::{Context, GameResult};
 use ggez::graphics::{self, Color};
 use ggez::event::EventHandler;
 
-use common::math::IVec2;
+use common::math::{Vec2, IVec2};
 use common::asset_manager::AssetManager;
 
 pub mod game_entity;
 pub mod renderer;
 pub mod hub;
 pub mod common;
+mod player;
 
+use player::Player;
 use hub::location::Location;
 use hub::item::*;
 use game_entity::*;
@@ -22,6 +24,7 @@ pub struct Game {
     renderer : Renderer,
     asset_manager : AssetManager,
     location : Location,
+    player : Player,
 
     from_last_tick : f32,
     tick_id : u32
@@ -43,7 +46,10 @@ impl Game {
 
         let location = Location::new(&asset_manager);
 
+        let player = Player::new(Vec2::zero());
+
         Game { 
+            player, 
             location, 
             renderer, 
             asset_manager, 
@@ -56,17 +62,24 @@ impl Game {
 
     fn update_all(&mut self, parameters : &UpdateParameters) {
         self.location.update(parameters);
+        self.player.update(parameters);
     }
 
     fn tick_all(&mut self) {
         self.location.tick(self.tick_id);
-        
+        self.player.tick(self.tick_id);
     } 
+
+    fn render_all(&mut self) {
+        let transform = SpriteTransform::default();
+        self.location.render(&mut self.renderer, transform.clone());
+        self.player.render(&mut self.renderer, transform);
+    }
 }
 
 impl EventHandler for Game {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-        let delta_time = ggez::timer::delta(_ctx).as_secs_f32();
+    fn update(&mut self, context: &mut Context) -> GameResult<()> {
+        let delta_time = ggez::timer::delta(context).as_secs_f32();
 
         self.from_last_tick += delta_time;
         if self.from_last_tick > TICK_PERIOD {
@@ -81,6 +94,8 @@ impl EventHandler for Game {
             last_tick_id : self.tick_id
         };
 
+        self.player.process_keyboard_input(context);
+
         self.update_all(&update_parameters);
 
         Ok(())
@@ -89,9 +104,7 @@ impl EventHandler for Game {
     fn draw(&mut self, context: &mut Context) -> GameResult<()> {
         graphics::clear(context, Color::WHITE);
         
-        let transform = SpriteTransform::default();
-        self.location.render(&mut self.renderer, transform);
-
+        self.render_all();
         self.renderer.render_to_screen(context, &self.asset_manager, &self.camera);
 
         graphics::present(context)
