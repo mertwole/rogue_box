@@ -29,7 +29,7 @@ pub struct Recycler {
 
     item_prototypes : HashMap<ItemId, Item>,
     // Electricity.
-    electric_ports : Vec<Box<dyn ElectricPort>>
+    pub /*DEBUG*/ electric_ports : Vec<Box<dyn ElectricPort>>
 }
 
 impl Recycler {
@@ -147,10 +147,39 @@ impl Recycler {
         }
     }
 
-    fn drain_output(&mut self) {
+    fn pull_item_messages(&mut self, tick_id : u32) -> Vec<Message> {
+        let mut messages = Vec::new();
+        for item_id in self.item_output.keys() {
+            let item_count = *self.item_output_buf.get(item_id).unwrap();
+            let item_prototype = self.item_prototypes.get(item_id).unwrap();            
+            for _ in  0..item_count {
+                messages.push(Message {
+                    id : messages.len() as u32,
+                    sender : MessageExchangeActor::new(),
+                    receiver : MessageExchangeActor::new(),
+                    target : Target::BroadcastNeighbors,
+                    tick_id,
+                    body : MessageBody::PushItem(TransportedItem::new(item_prototype.clone()))
+                });
+            }
+        }
+
         for id in self.item_output.keys() {
             *self.item_output_buf.get_mut(&id).unwrap() = 0;
         }
+
+        messages
+    }
+
+    fn pull_electricity_messages(&mut self, tick_id : u32) -> Vec<Message> {
+        let mut messages = Vec::new();
+        for port in &mut self.electric_ports {
+            match port.as_mut().as_output_mut() {
+                Some(out) => { messages.append(&mut out.pull_messages(tick_id)); }
+                None => { }
+            }
+        }
+        messages
     }
 }
 
@@ -161,7 +190,6 @@ impl GameEntity for Recycler {
 
     fn tick(&mut self, tick_id : u32) {
         if self.can_produce_electricity {
-            
             for port in &mut self.electric_ports {
                 let port = port.as_mut();
                 match port.as_output_mut() {
@@ -185,7 +213,8 @@ impl GameEntity for Recycler {
                 self.can_produce = false;
             }
         }
-        else {
+
+        if !self.can_produce {
             let mut can_take_resources = true;
             for (item, &amount) in &self.item_input_buf {
                 if amount < *self.item_input.get(item).unwrap() {
@@ -272,42 +301,20 @@ impl Building for Recycler {
         &self.name
     }
 
-    fn get_electric_ports_mut(&mut self) -> Vec<&mut dyn ElectricPort> { 
-        vec![]
+    fn get_electric_ports_mut(&mut self) -> Vec<&mut Box<dyn ElectricPort>> { 
+        self.electric_ports.iter_mut().collect()
     }
 
     fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> { 
-        vec![] 
+        self.electric_ports.iter().map(|x| x.as_ref()).collect()
     }
 }
 
 impl MessageSender for Recycler {
     fn pull_messages(&mut self, tick_id : u32) -> Vec<Message> {
-        let mut messages = Vec::new();
-        for item_id in self.item_output.keys() {
-            let item_count = *self.item_output_buf.get(item_id).unwrap();
-            let item_prototype = self.item_prototypes.get(item_id).unwrap();            
-            for _ in  0..item_count {
-                messages.push(Message {
-                    id : messages.len() as u32,
-                    sender : MessageExchangeActor::new(),
-                    receiver : MessageExchangeActor::new(),
-                    target : Target::BroadcastNeighbors,
-                    tick_id,
-                    body : MessageBody::PushItem(TransportedItem::new(item_prototype.clone()))
-                });
-            }
-        }
-
-        self.drain_output();
-
-        for port in &mut self.electric_ports {
-            match port.as_mut().as_output_mut() {
-                Some(out) => { messages.append(&mut out.pull_messages(tick_id)); }
-                None => { }
-            }
-        }
-
+        let mut messages = self.pull_item_messages(tick_id);
+        let mut electricity_messages = self.pull_electricity_messages(tick_id);
+        messages.append(&mut electricity_messages);
         messages
     }
 

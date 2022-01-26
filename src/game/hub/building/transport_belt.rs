@@ -215,7 +215,7 @@ impl Building for TransportBelt {
         &self.name
     }
 
-    fn get_electric_ports_mut(&mut self) -> Vec<&mut dyn ElectricPort> { 
+    fn get_electric_ports_mut(&mut self) -> Vec<&mut Box<dyn ElectricPort>> { 
         vec![] 
     }
 

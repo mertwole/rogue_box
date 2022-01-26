@@ -15,5 +15,5 @@ pub trait BuildingClone {
 pub trait Building : GameEntity + BuildingClone + MessageReceiver + MessageSender {
     fn get_name(&self) -> &str;
     fn get_electric_ports(&self) -> Vec<&dyn ElectricPort>;
-    fn get_electric_ports_mut(&mut self) -> Vec<&mut dyn ElectricPort>;
+    fn get_electric_ports_mut(&mut self) -> Vec<&mut Box<dyn ElectricPort>>;
 }

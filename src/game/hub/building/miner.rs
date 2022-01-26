@@ -70,12 +70,18 @@ impl Building for Miner {
         self.name.as_str()
     }
 
-    fn get_electric_ports_mut(&mut self) -> Vec<&mut dyn ElectricPort> { 
-        vec![] 
+    fn get_electric_ports_mut(&mut self) -> Vec<&mut Box<dyn ElectricPort>> { 
+        match &mut self.curr_recycler {
+            Some(recycler) => { recycler.get_electric_ports_mut() }
+            None => { vec![] }
+        }
     }
 
     fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> { 
-        vec![] 
+        match &self.curr_recycler {
+            Some(recycler) => { recycler.get_electric_ports() }
+            None => { vec![] }
+        }
     }
 }
 

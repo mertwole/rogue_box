@@ -48,7 +48,7 @@ impl ElectricOutput {
 
 impl MessageSender for ElectricOutput {
     fn pull_messages(&mut self, tick_id : u32) -> Vec<Message> {
-        if self.buffer.0 != 0 {
+        let messages = if self.buffer.0 != 0 {
             let mut sender = MessageExchangeActor::new();
             sender.set_electric_port(self.id);
             vec![
@@ -63,7 +63,9 @@ impl MessageSender for ElectricOutput {
             ]
         } else { 
             vec![] 
-        }
+        };
+        self.buffer = WattTick(0);
+        messages
     }
 
     fn message_send_result(&mut self, result : MessageSendResult) {

@@ -11,7 +11,7 @@
             },
 
             "electric_ports" : [
-                { "mode" : "in", "voltage" : 5, "energy" : 5 }
+                { "mode" : "in", "voltage" : 5, "energy" : 12 }
             ]
         },
 
@@ -26,7 +26,7 @@
             },
 
             "electric_ports" : [
-                { "mode" : "out", "voltage" : 5, "energy" : 5 }
+                { "mode" : "out", "voltage" : 5, "energy" : 4 }
             ]
         }
     ]   

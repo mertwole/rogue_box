@@ -15,7 +15,9 @@
                         "items" : {
                             "input" : [ ],
                             "output" : [ { "item" : "iron", "amount" : 1 } ]
-                        }
+                        },
+
+                        "electric_ports" : [ ]
                     }
                 },
                 { 
@@ -28,7 +30,9 @@
                         "items" : {
                             "input" : [ ],
                             "output" : [ { "item" : "copper", "amount" : 1 } ]
-                        }
+                        },
+
+                        "electric_ports" : [ ]
                     }
                 }
             ]
