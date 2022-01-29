@@ -2,14 +2,14 @@ use crate::game::common::math::Vec2;
 
 pub struct Collider {
     shape : ColliderShape,
-    position : Vec2,
+    pub(in super) position : Vec2,
     collision_mask : u32
 }
 
 pub struct CollisionData {
     // Normal facing from other body to self.
-    normal : Vec2,
-    depth : f32
+    pub normal : Vec2,
+    pub depth : f32
 }
 
 impl CollisionData {
@@ -87,7 +87,37 @@ impl ColliderShape {
     }
 
     fn box_circle(a_pos : Vec2, a_size : Vec2, b_center : Vec2, b_r : f32) -> Option<CollisionData> {
-        None
+        let a_min = a_pos - a_size * 0.5;
+        let a_max = a_min + a_size;
+
+        fn in_range(t : f32, min : f32, max : f32) -> bool {
+            f32::signum(max - t) * f32::signum(t - min) > 0.0
+        }
+
+        if  in_range(b_center.x, a_min.x, a_max.x) || in_range(b_center.y, a_min.y, a_max.y) {
+            let circle_aabb_size = Vec2::new(b_r, b_r) * 2.0;
+            return Self::box_box(a_pos, a_size, b_center, circle_aabb_size);
+        }
+
+        let rect_verts = vec![
+            a_min, Vec2::new(a_min.x, a_max.y), 
+            a_max, Vec2::new(a_max.x, a_min.y)
+        ];
+
+        let closest_vert = rect_verts.into_iter()
+        .map(|v| (v, (v - b_center).sqr_length()) )
+        .min_by(|x, y| x.1.partial_cmp(&y.1).unwrap_or(std::cmp::Ordering::Equal))
+        .unwrap().0;
+
+        let normal_vec = closest_vert - b_center;
+        let normal_vec_len = normal_vec.length();
+
+        Some( 
+            CollisionData {
+                normal : normal_vec / normal_vec_len,
+                depth : b_r - normal_vec_len
+            }
+        )
     }  
 }
 

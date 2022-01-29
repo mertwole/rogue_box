@@ -10,7 +10,7 @@ pub mod renderer;
 pub mod hub;
 pub mod common;
 mod player;
-mod physics;
+mod physics_scene;
 
 use player::Player;
 use hub::location::Location;
