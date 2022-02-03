@@ -1,77 +1,80 @@
-use std::collections::hash_map::HashMap;
-use std::cell::RefCell;
-
 use crate::game::common::math::{Vec2, Math};
 
 mod body;
 mod collider;
+mod physics_simulated;
 
 pub use body::Body;
 pub use collider::{Collider, ColliderShape};
+pub use physics_simulated::PhysicsSimulated;
 
 use body::*;
-use collider::*;
 
-pub struct PhysicsScene {
-    static_bodies : HashMap<BodyId, Body>,
-    dynamic_bodies : HashMap<BodyId, RefCell<Body>>,
-    last_body_id : u64,
+pub struct BodyCollection<'a> {
+    static_bodies : Vec<&'a mut Body>,
+    dynamic_bodies : Vec<&'a mut Body>
+}
+
+impl<'a> BodyCollection<'a> {
+    pub fn new() -> BodyCollection<'a> {
+        BodyCollection {
+            static_bodies : Vec::new(),
+            dynamic_bodies : Vec::new()
+        }
+    }
+
+    pub fn push(&mut self, body : &'a mut Body) {
+        match body.body_type {
+            BodyType::Static => { self.static_bodies.push(body); }
+            BodyType::Dynamic => { self.dynamic_bodies.push(body); }
+        }
+    }
+
+    pub fn append(&mut self, mut other : BodyCollection<'a>) {
+        self.dynamic_bodies.append(&mut other.dynamic_bodies);
+        self.static_bodies.append(&mut other.static_bodies);
+    }
+}
+
+pub struct PhysicsScene<'a> {
+    bodies : BodyCollection<'a>,
 
     positional_correction_percent : f32,
     positional_correction_slop : f32
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub struct BodyId(u64);
-
-impl PhysicsScene {
-    pub fn new() -> PhysicsScene {
+impl<'a> PhysicsScene<'a> {
+    pub fn new(bodies : BodyCollection<'a>) -> PhysicsScene<'a> {
         PhysicsScene {
-            static_bodies : HashMap::new(),
-            dynamic_bodies : HashMap::new(),
-            last_body_id : 0,
-
+            bodies,
             positional_correction_percent : 0.6,
             positional_correction_slop : 0.01
         }
     }
 
-    pub fn add_body(&mut self, body : Body) -> BodyId {
-        self.last_body_id += 1;
-        let id = BodyId(self.last_body_id);
-        match body.body_type {
-            BodyType::Static => { 
-                self.static_bodies.insert(id, body); 
-            }
-            BodyType::Dynamic => { 
-                self.dynamic_bodies.insert(id, RefCell::new(body)); 
-            }
-        }
-        id
-    }
-
-    pub fn remove_body(&mut self, id : BodyId) {
-        if self.static_bodies.contains_key(&id) {
-            self.static_bodies.remove(&id);
-        } else if self.dynamic_bodies.contains_key(&id) {
-            self.dynamic_bodies.remove(&id);
-        } else {
-            log::warn!("Trying to remove physics body that doesn't exist ({})", id.0);
-        }
-    }
-
     pub fn simulate(&mut self, delta_time : f32) {
+        self.update_collider_positions();
+
         self.resolve_collisions();
         self.move_bodies(delta_time);
+
+        self.update_collider_positions();
+    }
+
+    fn update_collider_positions(&mut self) {
+        for body in &mut self.bodies.dynamic_bodies {
+            body.collider.position = body.collider_initial_position + body.position;
+        }
+
+        for body in &mut self.bodies.static_bodies {
+            body.collider.position = body.collider_initial_position + body.position;
+        }
     }
 
     fn move_bodies(&mut self, delta_time : f32) {
-        for body_id in self.dynamic_bodies.keys() {
-            let body = &mut *self.dynamic_bodies[body_id].borrow_mut();
-            
-            body.velocity = body.velocity + body.force * delta_time;
-            let new_pos = *body.position + body.velocity * delta_time;
-            body.set_position(new_pos);
+        for body in &mut self.bodies.dynamic_bodies {
+            body.velocity = body.velocity + body.force * delta_time * body.inv_mass;
+            body.position = body.position + body.velocity * delta_time;
         }
     }   
 
@@ -98,30 +101,28 @@ impl PhysicsScene {
                 / inv_sum) * pc_percent;
                 let correction_vec = correction * data.normal;
 
-                let new_a_pos = *a.position - a.inv_mass * correction_vec;
-                let new_b_pos = *b.position + b.inv_mass * correction_vec;
-
-                a.set_position(new_a_pos);
-                b.set_position(new_b_pos);
+                a.position = a.position - a.inv_mass * correction_vec;
+                b.position = b.position + b.inv_mass * correction_vec;
             }
             None => {  }
         }
     }
 
     fn resolve_collisions(&mut self) {
-        for a in self.dynamic_bodies.keys() {
-            for b in self.dynamic_bodies.keys() {
-                if a.0 <= b.0 { continue; }
-                let a_body = &mut *self.dynamic_bodies[a].borrow_mut();
-                let b_body = &mut *self.dynamic_bodies[b].borrow_mut();
+        let dynamic_body_count = self.bodies.dynamic_bodies.len();
+        for a in 0..dynamic_body_count {
+            for b in 0..dynamic_body_count {
+                if a <= b { continue; }
+                let (head, tail) = self.bodies.dynamic_bodies.split_at_mut(a);
+                let a_body = &mut tail[0];
+                let b_body = &mut head[b];
                 Self::resolve_collision(a_body, b_body, 
                     self.positional_correction_percent, self.positional_correction_slop);
             }
         }
 
-        for a in self.dynamic_bodies.keys() {
-            for b_body in self.static_bodies.values_mut() {
-                let a_body = &mut *self.dynamic_bodies[a].borrow_mut();
+        for a_body in &mut self.bodies.dynamic_bodies {
+            for b_body in &mut self.bodies.static_bodies {
                 Self::resolve_collision(a_body, b_body, 
                     self.positional_correction_percent, self.positional_correction_slop);
             }

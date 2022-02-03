@@ -6,10 +6,11 @@ use crate::game::common::math::{Vec2, Math};
 use crate::game::game_entity::*;
 use crate::game::renderer::Sprite;
 use crate::game::common::asset_manager::AssetManager;
+use crate::game::physics_scene::*;
 
 pub struct Player {
     sprite : Sprite,
-    position : Vec2,
+    body : Body,
 
     speed : f32,
     friction : f32,
@@ -24,9 +25,12 @@ impl Player {
         let tex = AssetManager::get_asset_id("textures/character/test.png");
         let sprite = Sprite::new(tex);
 
+        let collider = Collider::new(ColliderShape::Box { size : Vec2::new_xy(1.0) }, Vec2::zero());
+        let body = Body::new_dynamic(collider, 1.0, position);
+
         Player {
             sprite,
-            position,
+            body,
 
             speed : 10.0,
             friction : 2.0,
@@ -66,7 +70,7 @@ impl Player {
         };
 
         let movement = self.velocity * delta_time;
-        self.position = self.position + movement;
+        self.body.set_position(self.body.get_position() + movement);
 
         self.velocity = self.velocity + acceleration * delta_time * self.acceleration_impact * self.speed;
         if self.velocity.sqr_length() > self.speed * self.speed {
@@ -89,7 +93,15 @@ impl GameEntity for Player {
     }
 
     fn render(&mut self, renderer : &mut Renderer, mut transform : SpriteTransform) {
-        transform = transform.add_translation(self.position);
+        transform = transform.add_translation(self.body.get_position());
         renderer.queue_render_sprite(self.sprite.clone(), transform);
+    }
+}
+
+impl PhysicsSimulated for Player {
+    fn get_all_bodies(&mut self) -> BodyCollection {
+        let mut bodies = BodyCollection::new();
+        bodies.push(&mut self.body);
+        bodies
     }
 }

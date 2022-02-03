@@ -17,6 +17,7 @@ use hub::location::Location;
 use hub::item::*;
 use game_entity::*;
 use renderer::{Renderer, camera::Camera};
+use physics_scene::*;
 
 pub const TICK_PERIOD : f32 = 1.0;
 
@@ -47,7 +48,7 @@ impl Game {
 
         let location = Location::new(&asset_manager);
 
-        let player = Player::new(Vec2::zero());
+        let player = Player::new(Vec2::new(-1.0, -1.0));
 
         Game { 
             player, 
@@ -59,6 +60,23 @@ impl Game {
             from_last_tick : 0.0,
             tick_id : 0
         }
+    }
+
+    fn simulate_physics(&mut self, delta_time : f32) {
+        let mut bodies = BodyCollection::new();
+
+        let collider = Collider::new(ColliderShape::Box { size : Vec2::new_xy(1.0) }, Vec2::zero());
+        let mut body = Body::new_static(collider, Vec2::new_xy(1.0));
+        bodies.push(&mut body);
+
+        let collider = Collider::new(ColliderShape::Box { size : Vec2::new_xy(1.0) }, Vec2::zero());
+        let mut body = Body::new_static(collider, Vec2::new_xy(2.0));
+        bodies.push(&mut body);
+
+        bodies.append(self.player.get_all_bodies());
+
+        let mut scene = PhysicsScene::new(bodies);
+        scene.simulate(delta_time);
     }
 
     fn update_all(&mut self, parameters : &UpdateParameters) {
@@ -96,6 +114,8 @@ impl EventHandler for Game {
         };
 
         self.player.process_keyboard_input(context);
+
+        self.simulate_physics(update_parameters.delta_time);
 
         self.update_all(&update_parameters);
 

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::game::common::math::Vec2;
 use super::collider::*;
 
@@ -10,7 +8,7 @@ pub enum BodyType {
 
 pub struct Body {
     pub(in super) body_type : BodyType,
-    pub(in super) position : Rc<Vec2>,
+    pub(in super) position : Vec2,
     pub(in super) collider_initial_position : Vec2,
     pub(in super) collider : Collider,
     pub(in super) mass : f32,
@@ -22,7 +20,7 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn new_dynamic(collider : Collider, mass : f32, position : Rc<Vec2>) -> Body {
+    pub fn new_dynamic(collider : Collider, mass : f32, position : Vec2) -> Body {
         let collider_initial_position = collider.position;
         Body {
             body_type : BodyType::Dynamic,
@@ -41,7 +39,7 @@ impl Body {
         let collider_initial_position = collider.position;
         Body {
             body_type : BodyType::Static,
-            position : Rc::from(position),
+            position : position,
             collider_initial_position,
             collider,
             mass : 0.0,
@@ -52,7 +50,11 @@ impl Body {
         }
     }
 
-    pub(in super) fn set_position(&mut self, position : Vec2) {
-        *Rc::get_mut(&mut self.position).unwrap() = position; 
+    pub fn get_position(&self) -> Vec2 {
+        self.position
+    } 
+
+    pub fn set_position(&mut self, position : Vec2) {
+        self.position = position;
     }
 }

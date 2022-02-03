@@ -59,12 +59,12 @@ impl ColliderShape {
 
         let data = if f32::abs(x_overlap) < f32::abs(y_overlap) {
             CollisionData {
-                normal : Vec2::new(-f32::signum(x_overlap), 0.0),
+                normal : Vec2::new(f32::signum(x_overlap), 0.0),
                 depth : f32::abs(x_overlap)
             }
         } else {
             CollisionData {
-                normal : Vec2::new(0.0, -f32::signum(y_overlap)),
+                normal : Vec2::new(0.0, f32::signum(y_overlap)),
                 depth : f32::abs(y_overlap)
             }
         };
@@ -114,7 +114,7 @@ impl ColliderShape {
 
         Some( 
             CollisionData {
-                normal : normal_vec / normal_vec_len,
+                normal : -1.0 * normal_vec / normal_vec_len,
                 depth : b_r - normal_vec_len
             }
         )
@@ -122,6 +122,14 @@ impl ColliderShape {
 }
 
 impl Collider {
+    pub fn new(shape : ColliderShape, position : Vec2) -> Collider {
+        Collider {
+            shape, 
+            position,
+            collision_mask : 0xFFFFFFFF
+        }
+    }
+
     pub fn collide(&self, other : &Collider) -> Option<CollisionData> {
         if self.collision_mask & other.collision_mask == 0 { return None; }
 
