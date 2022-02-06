@@ -7,10 +7,13 @@ use common::asset_manager::AssetManager;
 
 pub mod game_entity;
 pub mod renderer;
-pub mod hub;
 pub mod common;
+
 mod player;
 mod physics_scene;
+
+pub mod hub;
+mod trip;
 
 use player::Player;
 use hub::location::Location;
@@ -62,7 +65,7 @@ impl Game {
         }
     }
 
-    fn simulate_physics(&mut self, delta_time : f32) {
+    fn simulate_physics(&mut self, delta_time : f32) -> Vec<message::Message> {
         let mut bodies = BodyCollection::new();
 
         let collider = Collider::new(ColliderShape::Box { size : Vec2::new_xy(1.0) }, Vec2::zero());
@@ -76,7 +79,7 @@ impl Game {
         bodies.append(self.player.get_all_bodies());
 
         let mut scene = PhysicsScene::new(bodies);
-        scene.simulate(delta_time);
+        scene.simulate(delta_time)
     }
 
     fn update_all(&mut self, parameters : &UpdateParameters) {
@@ -115,7 +118,9 @@ impl EventHandler for Game {
 
         self.player.process_keyboard_input(context);
 
-        self.simulate_physics(update_parameters.delta_time);
+        let physics_messages = self.simulate_physics(update_parameters.delta_time);
+
+        self.player.handle_physics_messages(physics_messages);
 
         self.update_all(&update_parameters);
 

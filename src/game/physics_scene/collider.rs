@@ -1,21 +1,12 @@
 use crate::game::common::math::Vec2;
 
+use super::collision_data::CollisionData;
+
 pub struct Collider {
     shape : ColliderShape,
     pub(in super) position : Vec2,
-    collision_mask : u32
-}
-
-pub struct CollisionData {
-    // Normal facing from other body to self.
-    pub normal : Vec2,
-    pub depth : f32
-}
-
-impl CollisionData {
-    pub fn reverse(&mut self) {
-        self.normal = self.normal * -1.0;
-    } 
+    collision_mask : u32,
+    is_trigger : bool
 }
 
 pub enum ColliderShape {
@@ -126,7 +117,17 @@ impl Collider {
         Collider {
             shape, 
             position,
-            collision_mask : 0xFFFFFFFF
+            collision_mask : 0xFFFFFFFF,
+            is_trigger : false
+        }
+    }
+
+    pub fn new_trigger(shape : ColliderShape, position : Vec2) -> Collider {
+        Collider {
+            shape,
+            position,
+            collision_mask : 0xFFFFFFFF,
+            is_trigger : true
         }
     }
 

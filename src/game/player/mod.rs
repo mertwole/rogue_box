@@ -6,7 +6,10 @@ use crate::game::common::math::{Vec2, Math};
 use crate::game::game_entity::*;
 use crate::game::renderer::Sprite;
 use crate::game::common::asset_manager::AssetManager;
-use crate::game::physics_scene::*;
+use crate::game::physics_scene::{self, *};
+
+use crate::game::physics_scene::message::Message as PhysicsMessage;
+use crate::game::physics_scene::message::MessageBody as PhysicsMessageBody;
 
 pub struct Player {
     sprite : Sprite,
@@ -103,5 +106,13 @@ impl PhysicsSimulated for Player {
         let mut bodies = BodyCollection::new();
         bodies.push(&mut self.body);
         bodies
+    }
+
+    fn handle_physics_messages(&mut self, messages : Vec<PhysicsMessage>) {
+        //println!("{}", messages.len());
+
+        for msg in messages {
+            println!("{} {}", msg.causer.0, msg.affected.0);
+        }
     }
 }
