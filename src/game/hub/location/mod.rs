@@ -22,7 +22,7 @@ pub struct Location {
 
 impl Location {
     pub fn new(asset_manager : &AssetManager) -> Location {
-        let mut field = Field::new(IVec2::new(-10, -10), IVec2::new(10, 10), asset_manager);
+        let mut field = Field::new(IVec2::new(-100, -100), IVec2::new(100, 100), asset_manager);
 
         let items_dict = AssetManager::get_asset_id("dictionaries/items.json");
         let item_factory = ItemFactory::new(asset_manager.get_json(items_dict));

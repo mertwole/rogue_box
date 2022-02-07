@@ -1,4 +1,4 @@
-use crate::game::common::math::{Vec2, IVec2};
+use crate::game::common::math::{Vec2, IVec2, Rect};
 
 pub struct Camera {
     cell_size : f32,
@@ -26,4 +26,12 @@ impl Camera {
         res.y = self.resolution.y - res.y;
         res
     }
+
+    pub fn get_bounds(&self) -> Rect {
+        let resolution_cells = self.resolution.to_vec2() / self.cell_size;
+        let mut bounds = Rect::zero();
+        bounds.min = self.offset - resolution_cells * 0.5; 
+        bounds.max = self.offset + resolution_cells * 0.5;
+        bounds
+    } 
 }

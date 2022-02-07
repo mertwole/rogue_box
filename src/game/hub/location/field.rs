@@ -1,4 +1,4 @@
-use crate::game::common::math::IVec2;
+use crate::game::common::math::{Math, IVec2};
 use crate::game::common::direction::Direction;
 use crate::game::game_entity::*;
 use crate::game::renderer::Renderer;
@@ -183,10 +183,24 @@ impl GameEntity for Field {
     }
 
     fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
-        for (x, cell_column) in self.cells.iter_mut().enumerate() {
-            for (y, cell) in cell_column.iter_mut().enumerate() {
-                let cell_pos = self.min_coord + IVec2::new(x as isize, y as isize);
+        let mut render_bounds = renderer.get_render_bounds();
+        render_bounds.min = transform.reverse().apply(render_bounds.min);
+        render_bounds.max = transform.reverse().apply(render_bounds.max);
+
+        let mut min_visible_cell = render_bounds.min.to_ivec2() - IVec2::new(1, 1);
+        min_visible_cell.x = Math::max(min_visible_cell.x, self.min_coord.x);
+        min_visible_cell.y = Math::max(min_visible_cell.y, self.min_coord.y);
+
+        let mut max_visible_cell = render_bounds.max.to_ivec2() + IVec2::new(1, 1);
+        max_visible_cell.x = Math::min(max_visible_cell.x, self.max_coord.x);
+        max_visible_cell.y = Math::min(max_visible_cell.y, self.max_coord.y);
+
+        for x in min_visible_cell.x..max_visible_cell.x {
+            for y in min_visible_cell.y..max_visible_cell.y {
+                let cell_pos = IVec2::new(x as isize, y as isize);
                 let cell_transform = SpriteTransform::default().add_translation(cell_pos.to_vec2());
+                let cell_index = cell_pos - self.min_coord;
+                let cell = &mut self.cells[cell_index.x as usize][cell_index.y as usize];
                 cell.render(renderer, transform.combine(&cell_transform));
             }
         }

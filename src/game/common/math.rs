@@ -11,20 +11,12 @@ impl Math{
         x < std::f32::EPSILON * 10.0 && x > -std::f32::EPSILON * 10.0
     }
     
-    pub fn min(a : f32, b : f32) -> f32 {
+    pub fn min<T>(a : T, b : T) -> T where T : PartialOrd {
         if a < b { a } else { b } 
     }
 
-    pub fn max(a : f32, b : f32) -> f32 {
+    pub fn max<T>(a : T, b : T) -> T where T : PartialOrd {
         if a > b { a } else { b } 
-    }
-
-    pub fn min_triple(a : f32, b : f32, c : f32) -> f32{
-        Math::min(a, Math::min(b, c))
-    }
-
-    pub fn max_triple(a : f32, b : f32, c : f32) -> f32{
-        Math::max(a, Math::max(b, c))
     }
 }
 
@@ -189,6 +181,39 @@ impl ops::Div<f32> for Vec2 {
         Vec2::new(self.x / rhs, self.y / rhs)
     }
 }
+// endregion
+
+// region Rect
+
+#[derive(Copy, Clone)]
+pub struct Rect {
+    pub min : Vec2,
+    pub max : Vec2
+}
+
+impl Rect {
+    pub fn new(min : Vec2, max : Vec2) -> Rect {
+        Rect { min, max }
+    }
+
+    pub fn zero() -> Rect {
+        Rect {
+            min : Vec2::zero(),
+            max : Vec2::zero()
+        }
+    }
+
+    pub fn is_overlap(&self, other : &Rect) -> bool {
+        if self.min.x > other.max.x { return false; }
+        if self.max.x < other.min.x { return false; }
+
+        if self.min.y > other.max.y { return false; }
+        if self.max.y < other.min.y { return false; }
+        
+        true
+    }
+}
+
 // endregion
 
 // region Vec3

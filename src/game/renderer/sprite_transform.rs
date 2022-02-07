@@ -38,4 +38,16 @@ impl SpriteTransform {
             scale : self.scale * other.scale
         }
     }
+
+    pub fn reverse(&self) -> SpriteTransform {
+        SpriteTransform {
+            scale : Vec2::new_xy(1.0) / self.scale,
+            rotation : -self.rotation,
+            translation : -1.0 * self.translation
+        }
+    }
+
+    pub fn apply(&self, point : Vec2) -> Vec2 {
+        point + self.translation
+    }
 }

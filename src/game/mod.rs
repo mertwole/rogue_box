@@ -25,7 +25,6 @@ use physics_scene::*;
 pub const TICK_PERIOD : f32 = 1.0;
 
 pub struct Game {
-    camera : Camera,
     renderer : Renderer,
     asset_manager : AssetManager,
     location : Location,
@@ -37,7 +36,6 @@ pub struct Game {
 
 impl Game {
     pub fn new(context: &mut Context) -> Game {
-        let renderer = Renderer::new();
         let mut asset_manager = AssetManager::new();
 
         asset_manager.load_assets(context);
@@ -45,6 +43,7 @@ impl Game {
         let drawable_size = graphics::drawable_size(context);
         let res = IVec2::new(drawable_size.0 as isize, drawable_size.1 as isize);
         let camera = Camera::new(res);
+        let renderer = Renderer::new(camera);
 
         let items_dict = AssetManager::get_asset_id("dictionaries/items.json");
         let item_factory = ItemFactory::new(asset_manager.get_json(items_dict));
@@ -56,9 +55,8 @@ impl Game {
         Game { 
             player, 
             location, 
-            renderer, 
             asset_manager, 
-            camera,  
+            renderer,
             
             from_last_tick : 0.0,
             tick_id : 0
@@ -129,9 +127,9 @@ impl EventHandler for Game {
 
     fn draw(&mut self, context: &mut Context) -> GameResult<()> {
         graphics::clear(context, Color::WHITE);
-        
+
         self.render_all();
-        self.renderer.render_to_screen(context, &self.asset_manager, &self.camera);
+        self.renderer.render_to_screen(context, &self.asset_manager);
 
         graphics::present(context)
     }
