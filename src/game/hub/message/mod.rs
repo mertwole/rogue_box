@@ -16,7 +16,7 @@ pub struct Message {
 pub enum Target {
     Direction(Direction),
     BroadcastNeighbors,
-    BroadcastAllConnectedElectricInputs
+    ElectricInputs(Vec<(IVec2, PortId)>)
 }
 
 mod message_exchange_actor;

@@ -2,10 +2,13 @@ use crate::game::game_entity::*;
 use crate::game::hub::building::Building;
 use crate::game::renderer::Renderer;
 use super::surface::Surface;
+use crate::game::hub::message::*;
+use crate::game::hub::location::surface::*;
 
+#[derive(Default)]
 pub struct Cell {
     surface : Surface,
-    pub building : Option<Box<dyn Building>>
+    building : Option<Box<dyn Building>>
 }
 
 impl Cell {
@@ -23,31 +26,43 @@ impl Cell {
 
 impl GameEntity for Cell {
     fn update(&mut self, parameters : &UpdateParameters) {
-        match self.building.as_mut() {
-            Some(building) => { 
-                building.update(parameters); 
-            }
-            _ => { }
-        }
+        self.building.as_mut()
+        .map(|building| building.update(parameters));
     }
 
     fn tick(&mut self, tick_id : u32) {
-        match self.building.as_mut() {
-            Some(building) => { 
-                building.tick(tick_id); 
-            }
-            _ => { }
-        }
+        self.building.as_mut()
+        .map(|building| building.tick(tick_id));
     }
 
     fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
         self.surface.render(renderer, transform.clone());
+        self.building.as_mut()
+        .map(|building| building.render(renderer, transform));
+    }
+}
 
-        match self.building.as_mut() {
-            Some(building) => { 
-                building.render(renderer, transform); 
-            }
-            _ => { }
+impl MessageReceiver for Cell {
+    fn try_push_message(&mut self, message : Message) -> Option<Message> {
+        match &mut self.building {
+            Some(building) => { building.try_push_message(message) }
+            None => { Some(message) }
+        }
+    }
+}
+
+impl MessageSender for Cell {
+    fn pull_messages(&mut self, tick_id : u32) -> Vec<Message> {
+        match &mut self.building {
+            Some(building) => { building.pull_messages(tick_id) }
+            None => { vec![] }
+        }
+    }
+
+    fn message_send_result(&mut self, result : MessageSendResult) {
+        match &mut self.building {
+            Some(building) => { building.message_send_result(result); }
+            None => { }
         }
     }
 }

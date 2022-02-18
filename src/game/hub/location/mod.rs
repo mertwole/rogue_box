@@ -10,19 +10,33 @@ use crate::game::hub::location::surface::SurfaceFactory;
 use crate::game::common::direction::Direction;
 use crate::game::hub::electric_port::PortId;
 
+use crate::game::field::*;
+
 pub mod cell;
-mod field;
 pub mod surface;
 
-use field::Field;
+use cell::Cell;
 
 pub struct Location {
-    field : Field
+    field : Field<Cell>
 }
 
 impl Location {
     pub fn new(asset_manager : &AssetManager) -> Location {
-        let mut field = Field::new(IVec2::new(-100, -100), IVec2::new(100, 100), asset_manager);
+        let mut field = Field::<Cell>::new(IVec2::new(-100, -100), IVec2::new(100, 100));
+
+        let surface_json = AssetManager::get_asset_id("dictionaries/surfaces.json");
+        let surface_dict = asset_manager.get_json(surface_json);
+        let surface_factory = SurfaceFactory::new(surface_dict);
+        let grass_surface_id = SurfaceFactory::get_surface_id_by_name("grass");
+
+        for y in -100..100 {
+            for x in -100..100 {
+                let cell = field.get_cell_mut(IVec2::new(x, y)).unwrap();
+                let grass_surface = surface_factory.create_surface(grass_surface_id);
+                *cell = Cell::new(grass_surface);
+            }
+        }
 
         let items_dict = AssetManager::get_asset_id("dictionaries/items.json");
         let item_factory = ItemFactory::new(asset_manager.get_json(items_dict));

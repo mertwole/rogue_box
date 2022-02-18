@@ -360,7 +360,7 @@ impl MessageReceiver for Recycler {
                 }
                 Some(message)
             }
-            _ => {
+            MessageBody::SendElectricity(_) => {
                 let receiver_port = message.receiver.get_electric_port();
                 for port in &mut self.electric_ports {
                     if port.get_id() != receiver_port { continue; }
@@ -375,6 +375,9 @@ impl MessageReceiver for Recycler {
                     }
                 }
 
+                Some(message)
+            }
+            _ => {
                 Some(message)
             }
         }

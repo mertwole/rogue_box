@@ -1,4 +1,4 @@
-mod message;
+pub mod message;
 pub mod item;
 pub mod location;
 pub mod building;

@@ -15,6 +15,8 @@ mod physics_scene;
 pub mod hub;
 mod trip;
 
+pub mod field;
+
 use player::Player;
 use hub::location::Location;
 use hub::item::*;

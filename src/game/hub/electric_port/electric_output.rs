@@ -56,7 +56,7 @@ impl MessageSender for ElectricOutput {
                     id : 0,
                     sender,
                     receiver : MessageExchangeActor::new(),
-                    target : Target::BroadcastAllConnectedElectricInputs,
+                    target : Target::ElectricInputs(self.connected_inputs.clone()),
                     tick_id,
                     body : MessageBody::SendElectricity(self.buffer)
                 }

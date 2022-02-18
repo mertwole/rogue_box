@@ -3,6 +3,7 @@ use std::hash::Hash;
 use crate::game::renderer::Sprite;
 use crate::game::common::asset_manager::AssetManager;
 use crate::game::game_entity::*;
+use crate::game::common::asset_manager::AssetId;
 
 mod surface_factory;
 pub use surface_factory::*;
@@ -11,6 +12,15 @@ pub use surface_factory::*;
 pub struct Surface {
     id : SurfaceId,
     sprite : Sprite
+}
+
+impl Default for Surface {
+    fn default() -> Self {
+        Surface {
+            id : SurfaceId(0), 
+            sprite : Sprite::new(AssetId::null()) 
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, Copy, Clone, Hash)]
