@@ -1,4 +1,4 @@
-use crate::game::common::math::{Math, Vec2};
+use crate::game::common::math::Math;
 
 mod body;
 mod collider;

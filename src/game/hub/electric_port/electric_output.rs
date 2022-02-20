@@ -72,12 +72,11 @@ impl MessageSender for ElectricOutput {
 
     fn message_send_result(&mut self, result: MessageSendResult) {
         match result.message {
-            Some(msg) => match msg.body {
-                MessageBody::SendElectricity(remained) => {
+            Some(msg) => {
+                if let MessageBody::SendElectricity(remained) = msg.body {
                     self.buffer = remained;
                 }
-                _ => {}
-            },
+            }
             None => {
                 self.buffer = WattTick(0);
             }

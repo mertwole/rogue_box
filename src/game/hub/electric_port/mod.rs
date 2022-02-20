@@ -1,5 +1,4 @@
 use crate::game::common::math::IVec2;
-use crate::game::message::*;
 
 mod electric_input;
 mod electric_output;

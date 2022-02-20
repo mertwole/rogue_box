@@ -52,10 +52,12 @@ where
     }
 
     pub fn get_cell_mut(&mut self, coords: IVec2) -> Option<&mut T> {
-        if coords.x >= self.min_coord.x && coords.x <= self.max_coord.x {
-            if coords.y >= self.min_coord.y && coords.y <= self.max_coord.y {
-                return Some(self.get_cell_mut_unchecked(coords));
-            }
+        if coords.x >= self.min_coord.x
+            && coords.x <= self.max_coord.x
+            && coords.y >= self.min_coord.y
+            && coords.y <= self.max_coord.y
+        {
+            return Some(self.get_cell_mut_unchecked(coords));
         }
         None
     }
@@ -95,7 +97,7 @@ where
             return None;
         }
 
-        return back_message;
+        back_message
     }
 
     fn process_message(&mut self, mut message: Message) {
@@ -112,7 +114,7 @@ where
                 message.sender.get_position() + Direction::Left.to_ivec2(),
             ]
             .into_iter()
-            .map(|pos| MessageExchangeActor::at_position(pos))
+            .map(MessageExchangeActor::at_position)
             .collect(),
             Target::ElectricInputs(inputs) => inputs
                 .iter()

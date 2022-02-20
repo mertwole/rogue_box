@@ -1,9 +1,5 @@
 use std::ops;
 
-pub const EPSILON: f32 = 0.0001;
-pub const PI: f32 = 3.14159265359;
-pub const INV_PI: f32 = 0.31830988618;
-
 pub struct Math {}
 
 impl Math {
@@ -292,7 +288,7 @@ impl Vec3 {
     }
 
     pub fn random_on_unit_sphere(rand_0: f32, rand_1: f32) -> Vec3 {
-        let theta = rand_0 * PI * 2.0;
+        let theta = rand_0 * std::f32::consts::PI * 2.0;
         let phi = f32::acos((2.0 * rand_1) - 1.0);
         let x = f32::sin(phi) * f32::cos(theta);
         let y = f32::sin(phi) * f32::sin(theta);

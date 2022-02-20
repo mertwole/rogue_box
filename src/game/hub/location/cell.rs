@@ -3,7 +3,6 @@ use crate::game::common::math::Vec2;
 use crate::game::field::message::*;
 use crate::game::game_entity::*;
 use crate::game::hub::building::Building;
-use crate::game::hub::location::surface::*;
 use crate::game::renderer::Renderer;
 
 use crate::game::physics_scene::message as physics_message;
@@ -42,22 +41,22 @@ impl Cell {
 
 impl GameEntity for Cell {
     fn update(&mut self, parameters: &UpdateParameters) {
-        self.building
-            .as_mut()
-            .map(|building| building.update(parameters));
+        if let Some(building) = self.building.as_mut() {
+            building.update(parameters);
+        }
     }
 
     fn tick(&mut self, tick_id: u32) {
-        self.building
-            .as_mut()
-            .map(|building| building.tick(tick_id));
+        if let Some(building) = self.building.as_mut() {
+            building.tick(tick_id);
+        }
     }
 
     fn render(&mut self, renderer: &mut Renderer, transform: SpriteTransform) {
         self.surface.render(renderer, transform.clone());
-        self.building
-            .as_mut()
-            .map(|building| building.render(renderer, transform));
+        if let Some(building) = self.building.as_mut() {
+            building.render(renderer, transform);
+        }
     }
 }
 

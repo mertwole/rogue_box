@@ -22,7 +22,7 @@ impl ElectricInput {
 
     pub fn request_energy(&mut self, energy: WattTick) -> Option<WattTick> {
         if self.buffer >= energy {
-            self.buffer.0 = self.buffer.0 - energy.0;
+            self.buffer.0 -= energy.0;
             Some(energy)
         } else {
             None

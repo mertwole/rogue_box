@@ -5,7 +5,6 @@ use super::*;
 use crate::game::common::direction::Direction;
 use crate::game::common::json_reader::JsonReader;
 use crate::game::common::math::Vec2;
-use crate::game::field::message::*;
 use crate::game::hub::item::*;
 
 pub struct TransportBelt {
@@ -68,13 +67,12 @@ impl TransportBelt {
 
     fn compute_item_position(&self, direction: Direction, vec_id: i32) -> Vec2 {
         let dir_vec = direction.to_ivec2().to_vec2() / (2.0 * self.item_count as f32);
-        let rel_pos = dir_vec
+        dir_vec
             * if self.output == direction {
                 vec_id as f32
             } else {
                 self.item_count as f32 - vec_id as f32
-            };
-        rel_pos
+            }
     }
 
     fn move_buffer_items(&mut self, direction: Direction, tick_id: u32) {
@@ -166,11 +164,8 @@ impl TransportBelt {
 
     fn pull_item(&mut self, tick_id: u32) -> Option<TransportedItem> {
         let output_buf = self.item_buffers.get_mut(&self.output).unwrap();
-        let item = output_buf.last_mut().unwrap().as_mut();
-        if item.is_none() {
-            return None;
-        }
-        if item.unwrap().last_tick_moved == tick_id {
+        let item = output_buf.last_mut().unwrap().as_mut()?;
+        if item.last_tick_moved == tick_id {
             return None;
         }
         let mut item = output_buf.last_mut().unwrap().take().unwrap();
@@ -286,11 +281,8 @@ impl MessageSender for TransportBelt {
         match result.message {
             Some(message) => {
                 // Item failed to move.
-                match message.body {
-                    MessageBody::PushItem(item) => {
-                        self.pull_item_failed(item, message.tick_id);
-                    }
-                    _ => {}
+                if let MessageBody::PushItem(item) = message.body {
+                    self.pull_item_failed(item, message.tick_id);
                 }
             }
             None => {

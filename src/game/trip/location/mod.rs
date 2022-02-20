@@ -44,6 +44,6 @@ impl GameEntity for Location {
     }
 
     fn render(&mut self, renderer: &mut Renderer, transform: SpriteTransform) {
-        self.rooms[self.current_room].render(renderer, transform.clone());
+        self.rooms[self.current_room].render(renderer, transform);
     }
 }

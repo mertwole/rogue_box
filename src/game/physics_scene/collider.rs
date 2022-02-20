@@ -40,18 +40,8 @@ impl ColliderShape {
         let b_min = b_pos - b_size * 0.5;
         let b_max = b_min + b_size;
 
-        let x_overlap = Self::segment_segment_overlap(a_min.x, a_max.x, b_min.x, b_max.x);
-        if x_overlap.is_none() {
-            return None;
-        }
-
-        let y_overlap = Self::segment_segment_overlap(a_min.y, a_max.y, b_min.y, b_max.y);
-        if y_overlap.is_none() {
-            return None;
-        }
-
-        let x_overlap = x_overlap.unwrap();
-        let y_overlap = y_overlap.unwrap();
+        let x_overlap = Self::segment_segment_overlap(a_min.x, a_max.x, b_min.x, b_max.x)?;
+        let y_overlap = Self::segment_segment_overlap(a_min.y, a_max.y, b_min.y, b_max.y)?;
 
         let data = if f32::abs(x_overlap) < f32::abs(y_overlap) {
             CollisionData {

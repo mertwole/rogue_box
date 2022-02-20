@@ -56,7 +56,7 @@ impl Body {
         Body {
             id: BodyId::next(),
             body_type: BodyType::Static,
-            position: position,
+            position,
             collider_initial_position,
             collider,
             mass: 0.0,

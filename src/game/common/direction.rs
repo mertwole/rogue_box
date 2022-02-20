@@ -10,7 +10,7 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub fn to_ivec2(&self) -> IVec2 {
+    pub fn to_ivec2(self) -> IVec2 {
         match self {
             Direction::Up => IVec2::new(0, 1),
             Direction::Down => IVec2::new(0, -1),

@@ -26,8 +26,7 @@ impl Renderer {
     }
 
     pub fn queue_render_sprite(&mut self, sprite: Sprite, transform: SpriteTransform) {
-        self.queued_sprites
-            .push((sprite.clone(), transform.clone()));
+        self.queued_sprites.push((sprite, transform));
     }
 
     pub fn get_render_bounds(&self) -> Rect {

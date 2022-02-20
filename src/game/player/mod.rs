@@ -1,15 +1,14 @@
-use ggez::event::{EventHandler, KeyCode, KeyMods};
+use ggez::event::KeyCode;
 use ggez::input::keyboard;
 use ggez::Context;
 
 use crate::game::common::asset_manager::AssetManager;
 use crate::game::common::math::{Math, Vec2};
 use crate::game::game_entity::*;
-use crate::game::physics_scene::{self, *};
+use crate::game::physics_scene::*;
 use crate::game::renderer::Sprite;
 
 use crate::game::physics_scene::message::Message as PhysicsMessage;
-use crate::game::physics_scene::message::MessageBody as PhysicsMessageBody;
 
 pub struct Player {
     sprite: Sprite,

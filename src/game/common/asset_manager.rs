@@ -58,7 +58,7 @@ impl AssetManager {
         }
 
         for dir in dir.dirs() {
-            self.load_all_assets_in_dir(context, &dir);
+            self.load_all_assets_in_dir(context, dir);
         }
     }
 

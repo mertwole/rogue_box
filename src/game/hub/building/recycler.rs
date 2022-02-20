@@ -152,10 +152,9 @@ impl Recycler {
     pub fn init_items(&mut self, item_factory: &ItemFactory) {
         let item_ids = self.item_input.keys().chain(self.item_output.keys());
         for &item_id in item_ids {
-            if !self.item_prototypes.contains_key(&item_id) {
-                self.item_prototypes
-                    .insert(item_id, item_factory.create_item(item_id));
-            }
+            self.item_prototypes
+                .entry(item_id)
+                .or_insert_with(|| item_factory.create_item(item_id));
         }
     }
 
@@ -177,7 +176,7 @@ impl Recycler {
         }
 
         for id in self.item_output.keys() {
-            *self.item_output_buf.get_mut(&id).unwrap() = 0;
+            *self.item_output_buf.get_mut(id).unwrap() = 0;
         }
 
         messages
@@ -186,11 +185,8 @@ impl Recycler {
     fn pull_electricity_messages(&mut self, tick_id: u32) -> Vec<Message> {
         let mut messages = Vec::new();
         for port in &mut self.electric_ports {
-            match port.as_mut().as_output_mut() {
-                Some(out) => {
-                    messages.append(&mut out.pull_messages(tick_id));
-                }
-                None => {}
+            if let Some(out) = port.as_mut().as_output_mut() {
+                messages.append(&mut out.pull_messages(tick_id));
             }
         }
         messages
@@ -203,12 +199,8 @@ impl GameEntity for Recycler {
     fn tick(&mut self, tick_id: u32) {
         if self.can_produce_electricity {
             for port in &mut self.electric_ports {
-                let port = port.as_mut();
-                match port.as_output_mut() {
-                    Some(out) => {
-                        out.fill();
-                    }
-                    None => {}
+                if let Some(out) = port.as_mut().as_output_mut() {
+                    out.fill();
                 }
             }
 
@@ -222,7 +214,7 @@ impl GameEntity for Recycler {
             self.from_last_production += 1;
             if self.from_last_production >= self.period {
                 for (id, &amount) in &self.item_output {
-                    *self.item_output_buf.get_mut(&id).unwrap() = amount;
+                    *self.item_output_buf.get_mut(id).unwrap() = amount;
                 }
                 self.can_produce = false;
             }
@@ -238,15 +230,11 @@ impl GameEntity for Recycler {
             }
 
             for port in &self.electric_ports {
-                let port = port.as_ref();
-                match port.as_input() {
-                    Some(inp) => {
-                        if !inp.is_full() {
-                            can_take_resources = false;
-                            break;
-                        }
+                if let Some(inp) = port.as_ref().as_input() {
+                    if !inp.is_full() {
+                        can_take_resources = false;
+                        break;
                     }
-                    None => {}
                 }
             }
 
@@ -256,12 +244,8 @@ impl GameEntity for Recycler {
                 }
 
                 for port in &mut self.electric_ports {
-                    let port = port.as_mut();
-                    match port.as_input_mut() {
-                        Some(inp) => {
-                            inp.drain();
-                        }
-                        None => {}
+                    if let Some(inp) = port.as_mut().as_input_mut() {
+                        inp.drain();
                     }
                 }
 
@@ -274,7 +258,7 @@ impl GameEntity for Recycler {
     }
 
     fn render(&mut self, renderer: &mut Renderer, transform: SpriteTransform) {
-        let mut sprite = Sprite::new(self.texture);
+        let sprite = Sprite::new(self.texture);
         renderer.queue_render_sprite(sprite, transform);
     }
 }
@@ -350,20 +334,15 @@ impl MessageSender for Recycler {
                     let sender_port = message.sender.get_electric_port();
                     for port in &mut self.electric_ports {
                         if port.get_id() == sender_port {
-                            match port.as_mut().as_output_mut() {
-                                Some(out) => {
-                                    out.message_send_result(result);
-                                    return;
-                                }
-                                None => {}
+                            if let Some(out) = port.as_mut().as_output_mut() {
+                                out.message_send_result(result);
+                                return;
                             }
                         }
                     }
                 }
             },
-            None => {
-                return;
-            }
+            None => {}
         }
     }
 }
@@ -388,16 +367,9 @@ impl MessageReceiver for Recycler {
                     if port.get_id() != receiver_port {
                         continue;
                     }
-                    match port.as_input_mut() {
-                        Some(inp) => {
-                            message = match inp.try_push_message(message) {
-                                Some(back) => back,
-                                None => {
-                                    return None;
-                                }
-                            }
-                        }
-                        None => {}
+
+                    if let Some(inp) = port.as_input_mut() {
+                        message = inp.try_push_message(message)?;
                     }
                 }
 
