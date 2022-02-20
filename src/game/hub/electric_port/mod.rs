@@ -14,24 +14,24 @@ pub struct WattTick(u32);
 pub struct PortId(u32);
 
 impl Voltage {
-    pub fn new(value : u32) -> Voltage {
+    pub fn new(value: u32) -> Voltage {
         Voltage(value)
     }
 }
 
 impl WattTick {
-    pub fn new(value : u32) -> WattTick {
+    pub fn new(value: u32) -> WattTick {
         WattTick(value)
     }
 }
 
 impl PortId {
-    pub fn new(id : u32) -> PortId {
+    pub fn new(id: u32) -> PortId {
         PortId(id)
     }
 }
 
-pub trait ElectricPort : ElectricPortClone{ 
+pub trait ElectricPort: ElectricPortClone {
     fn as_input(&self) -> Option<&ElectricInput>;
     fn as_output(&self) -> Option<&ElectricOutput>;
 

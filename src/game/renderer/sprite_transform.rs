@@ -2,52 +2,52 @@ use crate::game::common::math::Vec2;
 
 #[derive(Clone)]
 pub struct SpriteTransform {
-    pub translation : Vec2,
-    pub rotation : f32,
-    pub scale : Vec2
+    pub translation: Vec2,
+    pub rotation: f32,
+    pub scale: Vec2,
 }
 
 impl SpriteTransform {
     pub fn default() -> SpriteTransform {
         SpriteTransform {
-            translation : Vec2::zero(),
-            rotation : 0.0,
-            scale : Vec2::new_xy(1.0)
+            translation: Vec2::zero(),
+            rotation: 0.0,
+            scale: Vec2::new_xy(1.0),
         }
     }
 
-    pub fn add_translation(mut self, translation : Vec2) -> SpriteTransform {
+    pub fn add_translation(mut self, translation: Vec2) -> SpriteTransform {
         self.translation = self.translation + translation;
         self
     }
 
-    pub fn add_rotation(mut self, rotation : f32) -> SpriteTransform {
+    pub fn add_rotation(mut self, rotation: f32) -> SpriteTransform {
         self.rotation += rotation;
         self
     }
 
-    pub fn add_scale(mut self, scale : Vec2) -> SpriteTransform {
+    pub fn add_scale(mut self, scale: Vec2) -> SpriteTransform {
         self.scale = self.scale * scale;
         self
     }
 
-    pub fn combine(&self, other : &SpriteTransform) -> SpriteTransform {
+    pub fn combine(&self, other: &SpriteTransform) -> SpriteTransform {
         SpriteTransform {
-            translation : self.translation + other.translation,
-            rotation : self.rotation + other.rotation,
-            scale : self.scale * other.scale
+            translation: self.translation + other.translation,
+            rotation: self.rotation + other.rotation,
+            scale: self.scale * other.scale,
         }
     }
 
     pub fn reverse(&self) -> SpriteTransform {
         SpriteTransform {
-            scale : Vec2::new_xy(1.0) / self.scale,
-            rotation : -self.rotation,
-            translation : -1.0 * self.translation
+            scale: Vec2::new_xy(1.0) / self.scale,
+            rotation: -self.rotation,
+            translation: -1.0 * self.translation,
         }
     }
 
-    pub fn apply(&self, point : Vec2) -> Vec2 {
+    pub fn apply(&self, point: Vec2) -> Vec2 {
         point + self.translation
     }
 }

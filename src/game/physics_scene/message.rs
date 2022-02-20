@@ -3,12 +3,12 @@ use super::collision_data::CollisionData;
 
 pub enum MessageBody {
     Collided(CollisionData),
-    TriggerEntered
+    TriggerEntered,
 }
 
 pub struct Message {
-    pub body : MessageBody,
+    pub body: MessageBody,
 
-    pub causer : BodyId,
-    pub affected : BodyId
+    pub causer: BodyId,
+    pub affected: BodyId,
 }

@@ -1,39 +1,39 @@
-use ggez::{Context, GameResult};
-use ggez::graphics::{self, Color};
 use ggez::event::EventHandler;
+use ggez::graphics::{self, Color};
+use ggez::{Context, GameResult};
 
-use common::math::{Vec2, IVec2};
 use common::asset_manager::AssetManager;
+use common::math::{IVec2, Vec2};
 
+pub mod common;
 pub mod game_entity;
 pub mod renderer;
-pub mod common;
 
-pub mod player;
 pub mod physics_scene;
+pub mod player;
 
 pub mod hub;
 mod trip;
 
 pub mod field;
 
-use player::Player;
-use hub::location::Location;
-use hub::item::*;
 use game_entity::*;
-use renderer::{Renderer, camera::Camera};
+use hub::item::*;
+use hub::location::Location;
 use physics_scene::*;
+use player::Player;
+use renderer::{camera::Camera, Renderer};
 
-pub const TICK_PERIOD : f32 = 1.0;
+pub const TICK_PERIOD: f32 = 1.0;
 
 pub struct Game {
-    renderer : Renderer,
-    asset_manager : AssetManager,
-    location : Location,
-    player : Player,
+    renderer: Renderer,
+    asset_manager: AssetManager,
+    location: Location,
+    player: Player,
 
-    from_last_tick : f32,
-    tick_id : u32
+    from_last_tick: f32,
+    tick_id: u32,
 }
 
 impl Game {
@@ -54,25 +54,35 @@ impl Game {
 
         let player = Player::new(Vec2::new(-1.0, -1.0));
 
-        Game { 
-            player, 
-            location, 
-            asset_manager, 
+        Game {
+            player,
+            location,
+            asset_manager,
             renderer,
-            
-            from_last_tick : 0.0,
-            tick_id : 0
+
+            from_last_tick: 0.0,
+            tick_id: 0,
         }
     }
 
-    fn simulate_physics(&mut self, delta_time : f32) -> Vec<physics_scene::message::Message> {
+    fn simulate_physics(&mut self, delta_time: f32) -> Vec<physics_scene::message::Message> {
         let mut bodies = BodyCollection::new();
 
-        let collider = Collider::new(ColliderShape::Box { size : Vec2::new_xy(1.0) }, Vec2::zero());
+        let collider = Collider::new(
+            ColliderShape::Box {
+                size: Vec2::new_xy(1.0),
+            },
+            Vec2::zero(),
+        );
         let mut body = Body::new_static(collider, Vec2::new_xy(1.0));
         bodies.push(&mut body);
 
-        let collider = Collider::new(ColliderShape::Box { size : Vec2::new_xy(1.0) }, Vec2::zero());
+        let collider = Collider::new(
+            ColliderShape::Box {
+                size: Vec2::new_xy(1.0),
+            },
+            Vec2::zero(),
+        );
         let mut body = Body::new_static(collider, Vec2::new_xy(2.0));
         bodies.push(&mut body);
 
@@ -82,7 +92,7 @@ impl Game {
         scene.simulate(delta_time)
     }
 
-    fn update_all(&mut self, parameters : &UpdateParameters) {
+    fn update_all(&mut self, parameters: &UpdateParameters) {
         self.location.update(parameters);
         self.player.update(parameters);
     }
@@ -90,7 +100,7 @@ impl Game {
     fn tick_all(&mut self) {
         self.location.tick(self.tick_id);
         self.player.tick(self.tick_id);
-    } 
+    }
 
     fn render_all(&mut self) {
         let transform = SpriteTransform::default();
@@ -112,8 +122,8 @@ impl EventHandler for Game {
 
         let update_parameters = UpdateParameters {
             delta_time,
-            from_last_tick : self.from_last_tick,
-            last_tick_id : self.tick_id
+            from_last_tick: self.from_last_tick,
+            last_tick_id: self.tick_id,
         };
 
         self.player.process_keyboard_input(context);

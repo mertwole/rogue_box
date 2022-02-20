@@ -1,7 +1,7 @@
 extern crate log;
 
-use ggez::{event, ContextBuilder};
 use ggez::conf::WindowSetup;
+use ggez::{event, ContextBuilder};
 
 mod game;
 

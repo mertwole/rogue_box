@@ -3,28 +3,30 @@ use crate::game::field::message::{Message, MessageBody, MessageReceiver};
 use super::*;
 
 pub struct ElectricInput {
-    id : PortId,
+    id: PortId,
 
-    voltage : Voltage,
-    request : WattTick,
-    buffer : WattTick
+    voltage: Voltage,
+    request: WattTick,
+    buffer: WattTick,
 }
 
 impl ElectricInput {
-    pub fn new(voltage : Voltage, request : WattTick, id : PortId) -> ElectricInput {
+    pub fn new(voltage: Voltage, request: WattTick, id: PortId) -> ElectricInput {
         ElectricInput {
             id,
             voltage,
             request,
-            buffer : WattTick(0)
+            buffer: WattTick(0),
         }
     }
 
-    pub fn request_energy(&mut self, energy : WattTick) -> Option<WattTick> {
+    pub fn request_energy(&mut self, energy: WattTick) -> Option<WattTick> {
         if self.buffer >= energy {
             self.buffer.0 = self.buffer.0 - energy.0;
             Some(energy)
-        } else { None }
+        } else {
+            None
+        }
     }
 
     pub fn drain(&mut self) -> WattTick {
@@ -40,18 +42,16 @@ impl ElectricInput {
 
 impl ElectricPortClone for ElectricInput {
     fn clone_box(&self) -> Box<dyn ElectricPort> {
-        Box::from(
-            ElectricInput {
-                id : self.id,
-                buffer : self.buffer,
-                request : self.request,
-                voltage : self.voltage
-            }
-        )
+        Box::from(ElectricInput {
+            id: self.id,
+            buffer: self.buffer,
+            request: self.request,
+            voltage: self.voltage,
+        })
     }
 }
 
-impl ElectricPort for ElectricInput { 
+impl ElectricPort for ElectricInput {
     fn as_input(&self) -> Option<&ElectricInput> {
         Some(self)
     }
@@ -68,15 +68,19 @@ impl ElectricPort for ElectricInput {
         None
     }
 
-    fn get_id(&self) -> PortId { self.id }
+    fn get_id(&self) -> PortId {
+        self.id
+    }
 }
 
 impl MessageReceiver for ElectricInput {
-    fn try_push_message(&mut self, mut message : Message) -> Option<Message> {
+    fn try_push_message(&mut self, mut message: Message) -> Option<Message> {
         match &mut message.body {
             MessageBody::SendElectricity(amount) => {
                 let free_space = self.request.0 - self.buffer.0;
-                if free_space == 0 { return Some(message); }
+                if free_space == 0 {
+                    return Some(message);
+                }
                 if free_space >= amount.0 {
                     self.buffer.0 += amount.0;
                     None
@@ -86,7 +90,7 @@ impl MessageReceiver for ElectricInput {
                     Some(message)
                 }
             }
-            _ => { Some(message) }
+            _ => Some(message),
         }
     }
 }

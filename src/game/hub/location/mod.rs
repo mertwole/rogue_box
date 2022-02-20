@@ -1,6 +1,6 @@
-use crate::game::game_entity::*;
 use crate::game::common::asset_manager::AssetManager;
 use crate::game::common::math::IVec2;
+use crate::game::game_entity::*;
 use crate::game::renderer::Renderer;
 
 use crate::game::hub::building::transport_belt::TransportBelt;
@@ -18,11 +18,11 @@ pub mod surface;
 use cell::Cell;
 
 pub struct Location {
-    field : Field<Cell>
+    field: Field<Cell>,
 }
 
 impl Location {
-    pub fn new(asset_manager : &AssetManager) -> Location {
+    pub fn new(asset_manager: &AssetManager) -> Location {
         let mut field = Field::<Cell>::new(IVec2::new(-100, -100), IVec2::new(100, 100));
 
         let surface_json = AssetManager::get_asset_id("dictionaries/surfaces.json");
@@ -57,8 +57,13 @@ impl Location {
         let json = asset_manager.get_json(json_asset);
         let recyclers = serde_json::from_str(json.as_ref()).unwrap();
         let mut err = false;
-        let recyclers = crate::game::common::json_reader::JsonReader::read_vec(&recyclers, "recyclers", &mut err);
-        let mut recycler = crate::game::hub::building::recycler::Recycler::from_json_object(&recyclers[0]);
+        let recyclers = crate::game::common::json_reader::JsonReader::read_vec(
+            &recyclers,
+            "recyclers",
+            &mut err,
+        );
+        let mut recycler =
+            crate::game::hub::building::recycler::Recycler::from_json_object(&recyclers[0]);
         recycler.init_items(&item_factory);
 
         let cell = field.get_cell_mut(IVec2::new(1, 1)).unwrap();
@@ -68,8 +73,13 @@ impl Location {
         let json = asset_manager.get_json(json_asset);
         let recyclers = serde_json::from_str(json.as_ref()).unwrap();
         let mut err = false;
-        let recyclers = crate::game::common::json_reader::JsonReader::read_vec(&recyclers, "recyclers", &mut err);
-        let mut recycler = crate::game::hub::building::recycler::Recycler::from_json_object(&recyclers[1]);
+        let recyclers = crate::game::common::json_reader::JsonReader::read_vec(
+            &recyclers,
+            "recyclers",
+            &mut err,
+        );
+        let mut recycler =
+            crate::game::hub::building::recycler::Recycler::from_json_object(&recyclers[1]);
         recycler.init_items(&item_factory);
 
         let out = recycler.electric_ports[0].as_output_mut().unwrap();
@@ -82,11 +92,15 @@ impl Location {
         let json = asset_manager.get_json(json_asset);
         let tbs = serde_json::from_str(json.as_ref()).unwrap();
         let mut err = false;
-        let tbs = crate::game::common::json_reader::JsonReader::read_vec(&tbs, "transport_belts", &mut err);
+        let tbs = crate::game::common::json_reader::JsonReader::read_vec(
+            &tbs,
+            "transport_belts",
+            &mut err,
+        );
         let mut tb = TransportBelt::from_json_object(&tbs[0]);
-            // setup
+        // setup
         tb.set_config(vec![Direction::Left, Direction::Up], Direction::Right);
-            // setup 
+        // setup
         let cell = field.get_cell_mut(IVec2::new(1, 0)).unwrap();
         cell.build(Box::from(tb));
         // DEBUG TRANSPORT BELT
@@ -94,11 +108,15 @@ impl Location {
         let json = asset_manager.get_json(json_asset);
         let tbs = serde_json::from_str(json.as_ref()).unwrap();
         let mut err = false;
-        let tbs = crate::game::common::json_reader::JsonReader::read_vec(&tbs, "transport_belts", &mut err);
+        let tbs = crate::game::common::json_reader::JsonReader::read_vec(
+            &tbs,
+            "transport_belts",
+            &mut err,
+        );
         let mut tb = TransportBelt::from_json_object(&tbs[0]);
-            // setup
+        // setup
         tb.set_config(vec![Direction::Left], Direction::Up);
-            // setup 
+        // setup
         let cell = field.get_cell_mut(IVec2::new(2, 0)).unwrap();
         cell.build(Box::from(tb));
         // DEBUG TRANSPORT BELT
@@ -106,28 +124,32 @@ impl Location {
         let json = asset_manager.get_json(json_asset);
         let tbs = serde_json::from_str(json.as_ref()).unwrap();
         let mut err = false;
-        let tbs = crate::game::common::json_reader::JsonReader::read_vec(&tbs, "transport_belts", &mut err);
+        let tbs = crate::game::common::json_reader::JsonReader::read_vec(
+            &tbs,
+            "transport_belts",
+            &mut err,
+        );
         let mut tb = TransportBelt::from_json_object(&tbs[0]);
-            // setup
+        // setup
         tb.set_config(vec![Direction::Down], Direction::Up);
-            // setup 
+        // setup
         let cell = field.get_cell_mut(IVec2::new(2, 1)).unwrap();
         cell.build(Box::from(tb));
-         
+
         Location { field }
     }
 }
 
 impl GameEntity for Location {
-    fn update(&mut self, parameters : &UpdateParameters) {
+    fn update(&mut self, parameters: &UpdateParameters) {
         self.field.update(parameters);
     }
 
-    fn tick(&mut self, tick_id : u32) {
+    fn tick(&mut self, tick_id: u32) {
         self.field.tick(tick_id);
     }
 
-    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
+    fn render(&mut self, renderer: &mut Renderer, transform: SpriteTransform) {
         self.field.render(renderer, transform);
     }
 }

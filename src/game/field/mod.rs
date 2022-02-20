@@ -1,28 +1,38 @@
-use crate::game::common::math::{Math, IVec2};
 use crate::game::common::direction::Direction;
+use crate::game::common::math::{IVec2, Math};
 use crate::game::game_entity::*;
-use crate::game::renderer::Renderer;
-use crate::game::physics_scene::{PhysicsSimulated, BodyCollection};
 use crate::game::physics_scene::message as physics_message;
+use crate::game::physics_scene::{BodyCollection, PhysicsSimulated};
+use crate::game::renderer::Renderer;
 
 pub mod message;
 use message::*;
 
-pub trait FieldCell : Default + GameEntity + MessageSender + MessageReceiver + PhysicsSimulated { }
-
-impl<T> FieldCell for T where T : Default + GameEntity + MessageSender + MessageReceiver + PhysicsSimulated { }
-
-pub struct Field<T> where T : FieldCell
+pub trait FieldCell:
+    Default + GameEntity + MessageSender + MessageReceiver + PhysicsSimulated
 {
-    min_coord : IVec2,
-    max_coord : IVec2,
-
-    cells : Vec<Vec<T>>
 }
 
-impl<T> Field<T> where T : FieldCell
+impl<T> FieldCell for T where
+    T: Default + GameEntity + MessageSender + MessageReceiver + PhysicsSimulated
 {
-    pub fn new(min_coord : IVec2, max_coord : IVec2) -> Field<T> {
+}
+
+pub struct Field<T>
+where
+    T: FieldCell,
+{
+    min_coord: IVec2,
+    max_coord: IVec2,
+
+    cells: Vec<Vec<T>>,
+}
+
+impl<T> Field<T>
+where
+    T: FieldCell,
+{
+    pub fn new(min_coord: IVec2, max_coord: IVec2) -> Field<T> {
         let x_count = (max_coord.x - min_coord.x) as usize;
         let y_count = (max_coord.y - min_coord.y) as usize;
         let mut cells = Vec::with_capacity(x_count);
@@ -34,47 +44,52 @@ impl<T> Field<T> where T : FieldCell
             cells.push(cells_row);
         }
 
-        Field { min_coord, max_coord, cells }
+        Field {
+            min_coord,
+            max_coord,
+            cells,
+        }
     }
 
-    pub fn get_cell_mut(&mut self, coords : IVec2) -> Option<&mut T> {
+    pub fn get_cell_mut(&mut self, coords: IVec2) -> Option<&mut T> {
         if coords.x >= self.min_coord.x && coords.x <= self.max_coord.x {
             if coords.y >= self.min_coord.y && coords.y <= self.max_coord.y {
                 return Some(self.get_cell_mut_unchecked(coords));
             }
-        } 
+        }
         None
     }
 
-    fn get_cell_mut_unchecked(&mut self, coords : IVec2) -> &mut T {
+    fn get_cell_mut_unchecked(&mut self, coords: IVec2) -> &mut T {
         let arr_coords = coords - self.min_coord;
         &mut self.cells[arr_coords.x as usize][arr_coords.y as usize]
     }
 
-    fn push_message_back(&mut self, message : Message) {
+    fn push_message_back(&mut self, message: Message) {
         let sender = self.get_cell_mut_unchecked(message.sender.get_position());
-        let result = MessageSendResult { 
-            tick_id : message.tick_id,  
-            message_id : message.id,
-            message : Some(message)
+        let result = MessageSendResult {
+            tick_id: message.tick_id,
+            message_id: message.id,
+            message: Some(message),
         };
         sender.message_send_result(result);
     }
 
-    fn try_process_message(&mut self, message : Message) -> Option<Message> {
+    fn try_process_message(&mut self, message: Message) -> Option<Message> {
         let receiver_cell = self.get_cell_mut(message.receiver.get_position());
-        if receiver_cell.is_none() { return Some(message); }
-        
+        if receiver_cell.is_none() {
+            return Some(message);
+        }
         let sender_pos = message.sender.get_position();
 
         let result = MessageSendResult {
-            message_id : message.id,
-            tick_id : message.tick_id,
-            message : None
+            message_id: message.id,
+            tick_id: message.tick_id,
+            message: None,
         };
 
         let back_message = receiver_cell.unwrap().try_push_message(message);
-        if back_message.is_none() { 
+        if back_message.is_none() {
             let sender = self.get_cell_mut_unchecked(sender_pos);
             sender.message_send_result(result);
             return None;
@@ -83,38 +98,39 @@ impl<T> Field<T> where T : FieldCell
         return back_message;
     }
 
-    fn process_message(&mut self, mut message : Message) {
-        let receivers : Vec<MessageExchangeActor> = 
-        match &message.target {
-            Target::Direction(dir) => { 
+    fn process_message(&mut self, mut message: Message) {
+        let receivers: Vec<MessageExchangeActor> = match &message.target {
+            Target::Direction(dir) => {
                 vec![MessageExchangeActor::at_position(
-                    message.sender.get_position() + dir.to_ivec2()
+                    message.sender.get_position() + dir.to_ivec2(),
                 )]
             }
-            Target::BroadcastNeighbors => { 
-                vec![   message.sender.get_position() + Direction::Up.to_ivec2(),
-                        message.sender.get_position() + Direction::Right.to_ivec2(),
-                        message.sender.get_position() + Direction::Down.to_ivec2(),
-                        message.sender.get_position() + Direction::Left.to_ivec2()
-                ].into_iter()
-                .map(|pos| MessageExchangeActor::at_position(pos)).collect()
-            }
-            Target::ElectricInputs(inputs) => {
-                inputs.iter().map(|(pos, port)| {
-                        let mut actor = MessageExchangeActor::at_position(*pos);
-                        actor.set_electric_port(*port);
-                        actor
-                    }
-                ).collect()
-            }
+            Target::BroadcastNeighbors => vec![
+                message.sender.get_position() + Direction::Up.to_ivec2(),
+                message.sender.get_position() + Direction::Right.to_ivec2(),
+                message.sender.get_position() + Direction::Down.to_ivec2(),
+                message.sender.get_position() + Direction::Left.to_ivec2(),
+            ]
+            .into_iter()
+            .map(|pos| MessageExchangeActor::at_position(pos))
+            .collect(),
+            Target::ElectricInputs(inputs) => inputs
+                .iter()
+                .map(|(pos, port)| {
+                    let mut actor = MessageExchangeActor::at_position(*pos);
+                    actor.set_electric_port(*port);
+                    actor
+                })
+                .collect(),
         };
 
         for receiver in receivers {
             message.receiver = receiver;
-            message = 
-            match self.try_process_message(message) {
-                Some(msg) => { msg }
-                None => { return; }
+            message = match self.try_process_message(message) {
+                Some(msg) => msg,
+                None => {
+                    return;
+                }
             };
         }
 
@@ -122,9 +138,11 @@ impl<T> Field<T> where T : FieldCell
     }
 }
 
-impl<T> GameEntity for Field<T> where T : FieldCell
+impl<T> GameEntity for Field<T>
+where
+    T: FieldCell,
 {
-    fn update(&mut self, parameters : &UpdateParameters) {
+    fn update(&mut self, parameters: &UpdateParameters) {
         for cell_column in &mut self.cells {
             for cell in cell_column {
                 cell.update(parameters);
@@ -132,7 +150,7 @@ impl<T> GameEntity for Field<T> where T : FieldCell
         }
     }
 
-    fn tick(&mut self, tick_id : u32) {
+    fn tick(&mut self, tick_id: u32) {
         for x in self.min_coord.x..self.max_coord.x {
             for y in self.min_coord.y..self.max_coord.y {
                 let cell = self.get_cell_mut_unchecked(IVec2::new(x, y));
@@ -144,16 +162,16 @@ impl<T> GameEntity for Field<T> where T : FieldCell
             for y in self.min_coord.y..self.max_coord.y {
                 let cell = self.get_cell_mut_unchecked(IVec2::new(x, y));
                 let messages = cell.pull_messages(tick_id);
-                for (message_id, mut message) in messages.into_iter().enumerate() { 
+                for (message_id, mut message) in messages.into_iter().enumerate() {
                     message.sender.set_position(IVec2::new(x, y));
                     message.id = message_id as u32;
-                    self.process_message(message); 
+                    self.process_message(message);
                 }
             }
         }
     }
 
-    fn render(&mut self, renderer : &mut Renderer, transform : SpriteTransform) {
+    fn render(&mut self, renderer: &mut Renderer, transform: SpriteTransform) {
         let mut render_bounds = renderer.get_render_bounds();
         render_bounds.min = transform.reverse().apply(render_bounds.min);
         render_bounds.max = transform.reverse().apply(render_bounds.max);
@@ -178,27 +196,21 @@ impl<T> GameEntity for Field<T> where T : FieldCell
     }
 }
 
-impl<T> PhysicsSimulated for Field<T> where T : FieldCell
+impl<T> PhysicsSimulated for Field<T>
+where
+    T: FieldCell,
 {
     fn get_all_bodies(&mut self) -> BodyCollection {
-        self.cells.iter_mut().fold(
-            BodyCollection::new(), 
-            |mut acc, x| { 
-                acc.append(x.iter_mut()
-                    .fold(
-                        BodyCollection::new(), 
-                        |mut acc, x| { 
-                            acc.append(x.get_all_bodies()); 
-                            acc 
-                        }
-                    )
-                );
+        self.cells
+            .iter_mut()
+            .fold(BodyCollection::new(), |mut acc, x| {
+                acc.append(x.iter_mut().fold(BodyCollection::new(), |mut acc, x| {
+                    acc.append(x.get_all_bodies());
+                    acc
+                }));
                 acc
-            }
-        )
+            })
     }
 
-    fn handle_physics_messages(&mut self, messages : Vec<physics_message::Message>) {
-        
-    }
+    fn handle_physics_messages(&mut self, messages: Vec<physics_message::Message>) {}
 }
