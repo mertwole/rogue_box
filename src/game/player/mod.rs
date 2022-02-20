@@ -110,11 +110,5 @@ impl PhysicsSimulated for Player {
         bodies
     }
 
-    fn handle_physics_messages(&mut self, messages: Vec<PhysicsMessage>) {
-        //println!("{}", messages.len());
-
-        for msg in messages {
-            println!("{} {}", msg.causer.0, msg.affected.0);
-        }
-    }
+    fn handle_physics_messages(&mut self, messages: Vec<PhysicsMessage>) {}
 }

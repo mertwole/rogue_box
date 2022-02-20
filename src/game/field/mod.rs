@@ -216,3 +216,100 @@ where
 
     fn handle_physics_messages(&mut self, messages: Vec<physics_message::Message>) {}
 }
+
+pub struct Iter<'a, T: FieldCell> {
+    cells: &'a Vec<Vec<T>>,
+    size: IVec2,
+    curr: IVec2,
+}
+
+impl<'a, T> Iterator for Iter<'a, T>
+where
+    T: FieldCell,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.curr.x >= self.size.x - 1 {
+            if self.curr.y >= self.size.y - 1 {
+                None
+            } else {
+                let cell = Some(&self.cells[self.curr.y as usize][self.curr.x as usize]);
+                self.curr.y += 1;
+                self.curr.x = 0;
+                cell
+            }
+        } else {
+            let cell = Some(&self.cells[self.curr.y as usize][self.curr.x as usize]);
+            self.curr.x += 1;
+            cell
+        }
+    }
+}
+
+impl<'a, T> IntoIterator for &'a Field<T>
+where
+    T: FieldCell,
+{
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter {
+            cells: &self.cells,
+            size: self.max_coord - self.min_coord,
+            curr: IVec2::zero(),
+        }
+    }
+}
+
+pub struct IterMut<'a, T: FieldCell> {
+    cells: &'a mut Vec<Vec<T>>,
+    size: IVec2,
+    curr: IVec2,
+}
+
+// TODO : remove unsafe
+impl<'a, T> Iterator for IterMut<'a, T>
+where
+    T: FieldCell,
+{
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.curr.x >= self.size.x - 1 {
+            if self.curr.y >= self.size.y - 1 {
+                None
+            } else {
+                let cell = unsafe {
+                    std::mem::transmute(&mut self.cells[self.curr.y as usize][self.curr.x as usize])
+                };
+                self.curr.y += 1;
+                self.curr.x = 0;
+                Some(cell)
+            }
+        } else {
+            let cell = unsafe {
+                std::mem::transmute(&mut self.cells[self.curr.y as usize][self.curr.x as usize])
+            };
+            self.curr.x += 1;
+            Some(cell)
+        }
+    }
+}
+
+impl<'a, T> IntoIterator for &'a mut Field<T>
+where
+    T: FieldCell,
+{
+    type Item = &'a mut T;
+    type IntoIter = IterMut<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut {
+            cells: &mut self.cells,
+            size: self.max_coord - self.min_coord,
+            curr: IVec2::zero(),
+        }
+    }
+}

@@ -65,33 +65,6 @@ impl Game {
         }
     }
 
-    fn simulate_physics(&mut self, delta_time: f32) -> Vec<physics_scene::message::Message> {
-        let mut bodies = BodyCollection::new();
-
-        let collider = Collider::new(
-            ColliderShape::Box {
-                size: Vec2::new_xy(1.0),
-            },
-            Vec2::zero(),
-        );
-        let mut body = Body::new_static(collider, Vec2::new_xy(1.0));
-        bodies.push(&mut body);
-
-        let collider = Collider::new(
-            ColliderShape::Box {
-                size: Vec2::new_xy(1.0),
-            },
-            Vec2::zero(),
-        );
-        let mut body = Body::new_static(collider, Vec2::new_xy(2.0));
-        bodies.push(&mut body);
-
-        bodies.append(self.player.get_all_bodies());
-
-        let mut scene = PhysicsScene::new(bodies);
-        scene.simulate(delta_time)
-    }
-
     fn update_all(&mut self, parameters: &UpdateParameters) {
         self.location.update(parameters);
         self.player.update(parameters);
@@ -127,10 +100,6 @@ impl EventHandler for Game {
         };
 
         self.player.process_keyboard_input(context);
-
-        let physics_messages = self.simulate_physics(update_parameters.delta_time);
-
-        self.player.handle_physics_messages(physics_messages);
 
         self.update_all(&update_parameters);
 

@@ -12,6 +12,8 @@ use crate::game::hub::electric_port::PortId;
 
 use crate::game::field::*;
 
+use crate::game::physics_scene::{BodyCollection, PhysicsScene};
+
 pub mod cell;
 pub mod surface;
 
@@ -30,13 +32,18 @@ impl Location {
         let surface_factory = SurfaceFactory::new(surface_dict);
         let grass_surface_id = SurfaceFactory::get_surface_id_by_name("grass");
 
-        for y in -100..100 {
-            for x in -100..100 {
-                let cell = field.get_cell_mut(IVec2::new(x, y)).unwrap();
-                let grass_surface = surface_factory.create_surface(grass_surface_id);
-                *cell = Cell::new(grass_surface);
-            }
+        for cell in &mut field {
+            let grass_surface = surface_factory.create_surface(grass_surface_id);
+            *cell = Cell::new(grass_surface);
         }
+
+        // for y in -100..100 {
+        //     for x in -100..100 {
+        //         let cell = field.get_cell_mut(IVec2::new(x, y)).unwrap();
+        //         let grass_surface = surface_factory.create_surface(grass_surface_id);
+        //         *cell = Cell::new(grass_surface);
+        //     }
+        // }
 
         let items_dict = AssetManager::get_asset_id("dictionaries/items.json");
         let item_factory = ItemFactory::new(asset_manager.get_json(items_dict));
@@ -137,6 +144,13 @@ impl Location {
         cell.build(Box::from(tb));
 
         Location { field }
+    }
+
+    fn simulate_physics(&mut self, delta_time: f32) {
+        let bodies = BodyCollection::new();
+
+        let mut scene = PhysicsScene::new(bodies);
+        scene.simulate(delta_time);
     }
 }
 
