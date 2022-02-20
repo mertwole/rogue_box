@@ -1,6 +1,6 @@
 use crate::game::game_entity::*;
 use crate::game::renderer::Renderer;
-use crate::game::hub::message::*;
+use crate::game::field::message::*;
 use crate::game::hub::electric_port::ElectricPort;
 
 pub mod recycler;

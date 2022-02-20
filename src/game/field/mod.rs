@@ -2,10 +2,17 @@ use crate::game::common::math::{Math, IVec2};
 use crate::game::common::direction::Direction;
 use crate::game::game_entity::*;
 use crate::game::renderer::Renderer;
-use crate::game::hub::message::*;
+use crate::game::physics_scene::{PhysicsSimulated, BodyCollection};
+use crate::game::physics_scene::message as physics_message;
 
-pub struct Field<T>
-    where T : Default + GameEntity + MessageSender + MessageReceiver
+pub mod message;
+use message::*;
+
+pub trait FieldCell : Default + GameEntity + MessageSender + MessageReceiver + PhysicsSimulated { }
+
+impl<T> FieldCell for T where T : Default + GameEntity + MessageSender + MessageReceiver + PhysicsSimulated { }
+
+pub struct Field<T> where T : FieldCell
 {
     min_coord : IVec2,
     max_coord : IVec2,
@@ -13,16 +20,9 @@ pub struct Field<T>
     cells : Vec<Vec<T>>
 }
 
-impl<T> Field<T> 
-    where T : Default + GameEntity + MessageSender + MessageReceiver
+impl<T> Field<T> where T : FieldCell
 {
     pub fn new(min_coord : IVec2, max_coord : IVec2) -> Field<T> {
-        // let surface_json = AssetManager::get_asset_id("dictionaries/surfaces.json");
-        // let surface_dict = asset_manager.get_json(surface_json);
-        // let surface_factory = SurfaceFactory::new(surface_dict);
-        // let grass_surface_id = SurfaceFactory::get_surface_id_by_name("grass");
-        // let grass_surface = surface_factory.create_surface(grass_surface_id);
-
         let x_count = (max_coord.x - min_coord.x) as usize;
         let y_count = (max_coord.y - min_coord.y) as usize;
         let mut cells = Vec::with_capacity(x_count);
@@ -122,8 +122,7 @@ impl<T> Field<T>
     }
 }
 
-impl<T> GameEntity for Field<T> 
-    where T : Default + GameEntity + MessageSender + MessageReceiver
+impl<T> GameEntity for Field<T> where T : FieldCell
 {
     fn update(&mut self, parameters : &UpdateParameters) {
         for cell_column in &mut self.cells {
@@ -176,5 +175,30 @@ impl<T> GameEntity for Field<T>
                 cell.render(renderer, transform.combine(&cell_transform));
             }
         }
+    }
+}
+
+impl<T> PhysicsSimulated for Field<T> where T : FieldCell
+{
+    fn get_all_bodies(&mut self) -> BodyCollection {
+        self.cells.iter_mut().fold(
+            BodyCollection::new(), 
+            |mut acc, x| { 
+                acc.append(x.iter_mut()
+                    .fold(
+                        BodyCollection::new(), 
+                        |mut acc, x| { 
+                            acc.append(x.get_all_bodies()); 
+                            acc 
+                        }
+                    )
+                );
+                acc
+            }
+        )
+    }
+
+    fn handle_physics_messages(&mut self, messages : Vec<physics_message::Message>) {
+        
     }
 }

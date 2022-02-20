@@ -1,26 +1,41 @@
+use crate::game::common::math::Vec2;
 use crate::game::game_entity::*;
 use crate::game::hub::building::Building;
 use crate::game::renderer::Renderer;
 use super::surface::Surface;
-use crate::game::hub::message::*;
+use crate::game::field::message::*;
 use crate::game::hub::location::surface::*;
+
+use crate::game::physics_scene::message as physics_message;
+use crate::game::physics_scene::{BodyCollection, PhysicsSimulated, Body, Collider, ColliderShape};
 
 #[derive(Default)]
 pub struct Cell {
     surface : Surface,
-    building : Option<Box<dyn Building>>
+    building : Option<Box<dyn Building>>,
+    body : Option<Body>
 }
 
 impl Cell {
     pub fn new(surface : Surface) -> Cell {
         Cell {
             surface,
-            building : None
+            building : None,
+            body : None
         }
     }
 
     pub fn build(&mut self, building : Box<dyn Building>) {
         self.building = Some(building);
+
+        self.body = Some(
+            Body::new_static(
+                Collider::new(
+                    ColliderShape::Box { size : Vec2::new(1.0, 1.0) }, Vec2::zero()
+                ), 
+                Vec2::zero()
+            )
+        );
     }
 }
 
@@ -64,5 +79,19 @@ impl MessageSender for Cell {
             Some(building) => { building.message_send_result(result); }
             None => { }
         }
+    }
+}
+
+impl PhysicsSimulated for Cell {
+    fn get_all_bodies(&mut self) -> BodyCollection {
+        let mut bc = BodyCollection::new();
+        if self.body.is_some() {
+            bc.push(self.body.as_mut().unwrap());
+        }
+        bc
+    }
+
+    fn handle_physics_messages(&mut self, messages : Vec<physics_message::Message>) {
+
     }
 }

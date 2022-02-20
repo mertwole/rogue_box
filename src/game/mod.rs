@@ -9,8 +9,8 @@ pub mod game_entity;
 pub mod renderer;
 pub mod common;
 
-mod player;
-mod physics_scene;
+pub mod player;
+pub mod physics_scene;
 
 pub mod hub;
 mod trip;
@@ -65,7 +65,7 @@ impl Game {
         }
     }
 
-    fn simulate_physics(&mut self, delta_time : f32) -> Vec<message::Message> {
+    fn simulate_physics(&mut self, delta_time : f32) -> Vec<physics_scene::message::Message> {
         let mut bodies = BodyCollection::new();
 
         let collider = Collider::new(ColliderShape::Box { size : Vec2::new_xy(1.0) }, Vec2::zero());

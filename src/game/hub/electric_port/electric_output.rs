@@ -1,3 +1,5 @@
+use crate::game::field::message::{Message, MessageBody, MessageSender, MessageExchangeActor, Target, MessageSendResult};
+
 use super::*;
 
 pub struct ElectricOutput {

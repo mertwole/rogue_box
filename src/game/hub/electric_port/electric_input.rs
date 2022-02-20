@@ -1,3 +1,5 @@
+use crate::game::field::message::{Message, MessageBody, MessageReceiver};
+
 use super::*;
 
 pub struct ElectricInput {

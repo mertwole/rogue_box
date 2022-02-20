@@ -6,7 +6,7 @@ use crate::game::hub::item::*;
 use crate::game::common::direction::Direction;
 use crate::game::common::json_reader::JsonReader;
 use crate::game::common::math::Vec2;
-use crate::game::hub::message::*;
+use crate::game::field::message::*;
 
 pub struct TransportBelt { 
     name : String,
