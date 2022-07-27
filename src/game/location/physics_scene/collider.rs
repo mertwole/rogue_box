@@ -2,13 +2,15 @@ use crate::game::common::math::Vec2;
 
 use super::collision_data::CollisionData;
 
+#[derive(Clone)]
 pub struct Collider {
     shape: ColliderShape,
     pub(super) position: Vec2,
     collision_mask: u32,
-    is_trigger: bool,
+    pub(super) is_trigger: bool,
 }
 
+#[derive(Clone)]
 pub enum ColliderShape {
     Box { size: Vec2 },
     Circle { radius: f32 },

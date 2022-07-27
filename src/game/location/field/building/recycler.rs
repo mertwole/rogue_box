@@ -2,13 +2,17 @@ use std::collections::HashMap;
 
 use super::*;
 
-use crate::game::common::asset_manager::{AssetId, AssetManager};
-use crate::game::common::json_reader::JsonReader;
-use crate::game::game_entity::GameEntity;
-use crate::game::hub::electric_port::*;
-use crate::game::hub::item::TransportedItem;
-use crate::game::hub::item::*;
-use crate::game::renderer::{Renderer, Sprite};
+use crate::game::{
+    common::{
+        asset_manager::{AssetId, AssetManager},
+        direction::Direction,
+        json_reader::JsonReader,
+    },
+    game_entity::GameEntity,
+    location::field::building::item::{Item, ItemFactory, ItemId, TransportedItem},
+    message::*,
+    renderer::{Renderer, Sprite},
+};
 
 pub struct Recycler {
     name: String,
@@ -18,8 +22,6 @@ pub struct Recycler {
     from_last_production: u32,
     can_produce: bool,
 
-    produces_electricity: u32,
-    can_produce_electricity: bool,
     // Items.
     item_input: HashMap<ItemId, u32>,
     item_output: HashMap<ItemId, u32>,
@@ -28,8 +30,6 @@ pub struct Recycler {
     item_output_buf: HashMap<ItemId, u32>,
 
     item_prototypes: HashMap<ItemId, Item>,
-    // Electricity.
-    pub electric_ports: Vec<Box<dyn ElectricPort>>,
 }
 
 impl Recycler {
@@ -82,31 +82,6 @@ impl Recycler {
         }
     }
 
-    fn electricity_data_from_json_object(&mut self, obj: &serde_json::Value, error: &mut bool) {
-        let electric_port_objs = JsonReader::read_vec(obj, "electric_ports", error);
-        self.electric_ports = Vec::new();
-
-        for port_obj in electric_port_objs {
-            let voltage = JsonReader::read_i32(&port_obj, "voltage", error) as u32;
-            let voltage = Voltage::new(voltage);
-            let energy = JsonReader::read_i32(&port_obj, "energy", error) as u32;
-            let energy = WattTick::new(energy);
-
-            let mode = JsonReader::read_string(&port_obj, "mode", error);
-            let port_id = PortId::new(self.electric_ports.len() as u32);
-            let port: Box<dyn ElectricPort> = match &*mode {
-                "in" => Box::from(ElectricInput::new(voltage, energy, port_id)),
-                "out" => Box::from(ElectricOutput::new(voltage, energy, port_id)),
-                _ => {
-                    *error = true;
-                    return;
-                }
-            };
-
-            self.electric_ports.push(port);
-        }
-    }
-
     pub fn from_json_object(obj: &serde_json::Value) -> Recycler {
         let mut recycler = Recycler {
             name: String::new(),
@@ -115,23 +90,18 @@ impl Recycler {
             period: 0,
             from_last_production: 0,
             can_produce: false,
-            produces_electricity: 0,
-            can_produce_electricity: false,
 
             item_input: HashMap::new(),
             item_output: HashMap::new(),
             item_input_buf: HashMap::new(),
             item_output_buf: HashMap::new(),
             item_prototypes: HashMap::new(),
-
-            electric_ports: Vec::new(),
         };
 
         let mut error = false;
 
         recycler.common_data_from_json_object(obj, &mut error);
         recycler.item_data_from_json_object(obj, &mut error);
-        recycler.electricity_data_from_json_object(obj, &mut error);
 
         if error {
             log::error!(
@@ -163,15 +133,24 @@ impl Recycler {
         for item_id in self.item_output.keys() {
             let item_count = *self.item_output_buf.get(item_id).unwrap();
             let item_prototype = self.item_prototypes.get(item_id).unwrap();
+
             for _ in 0..item_count {
-                messages.push(Message {
+                messages.push(Message::FieldMessage(field_message::Message {
                     id: messages.len() as u32,
-                    sender: MessageExchangeActor::new(),
-                    receiver: MessageExchangeActor::new(),
-                    target: Target::BroadcastNeighbors,
+                    sender: field_message::MessageExchangeActor::default(),
+                    receiver: field_message::MessageExchangeActor::default(),
+                    target: field_message::Target::Directions(vec![
+                        Direction::Up,
+                        Direction::Right,
+                        Direction::Down,
+                        Direction::Left,
+                    ]),
                     tick_id,
-                    body: MessageBody::PushItem(TransportedItem::new(item_prototype.clone())),
-                });
+                    refund: false,
+                    body: field_message::MessageBody::PushItem(TransportedItem::new(
+                        item_prototype.clone(),
+                    )),
+                }));
             }
         }
 
@@ -181,35 +160,12 @@ impl Recycler {
 
         messages
     }
-
-    fn pull_electricity_messages(&mut self, tick_id: u32) -> Vec<Message> {
-        let mut messages = Vec::new();
-        for port in &mut self.electric_ports {
-            if let Some(out) = port.as_mut().as_output_mut() {
-                messages.append(&mut out.pull_messages(tick_id));
-            }
-        }
-        messages
-    }
 }
 
 impl GameEntity for Recycler {
     fn update(&mut self, parameters: &UpdateParameters) {}
 
     fn tick(&mut self, tick_id: u32) {
-        if self.can_produce_electricity {
-            for port in &mut self.electric_ports {
-                if let Some(out) = port.as_mut().as_output_mut() {
-                    out.fill();
-                }
-            }
-
-            self.produces_electricity += 1;
-            if self.produces_electricity >= self.period {
-                self.can_produce_electricity = false;
-            }
-        }
-
         if self.can_produce {
             self.from_last_production += 1;
             if self.from_last_production >= self.period {
@@ -229,30 +185,13 @@ impl GameEntity for Recycler {
                 }
             }
 
-            for port in &self.electric_ports {
-                if let Some(inp) = port.as_ref().as_input() {
-                    if !inp.is_full() {
-                        can_take_resources = false;
-                        break;
-                    }
-                }
-            }
-
             if can_take_resources {
                 for amount in self.item_input_buf.values_mut() {
                     *amount = 0;
                 }
 
-                for port in &mut self.electric_ports {
-                    if let Some(inp) = port.as_mut().as_input_mut() {
-                        inp.drain();
-                    }
-                }
-
                 self.can_produce = true;
                 self.from_last_production = 0;
-                self.can_produce_electricity = true;
-                self.produces_electricity = 0;
             }
         }
     }
@@ -274,11 +213,6 @@ impl BuildingClone for Recycler {
             *val = 0;
         }
 
-        let mut electric_ports = Vec::new();
-        for port in &self.electric_ports {
-            electric_ports.push((*port).clone_box());
-        }
-
         Box::from(Recycler {
             name: self.name.clone(),
             texture: self.texture,
@@ -286,8 +220,6 @@ impl BuildingClone for Recycler {
             period: self.period,
             from_last_production: 0,
             can_produce: false,
-            produces_electricity: 0,
-            can_produce_electricity: false,
 
             item_input: self.item_input.clone(),
             item_output: self.item_output.clone(),
@@ -296,8 +228,6 @@ impl BuildingClone for Recycler {
             item_output_buf,
 
             item_prototypes: self.item_prototypes.clone(),
-
-            electric_ports,
         })
     }
 }
@@ -306,75 +236,52 @@ impl Building for Recycler {
     fn get_name(&self) -> &str {
         &self.name
     }
-
-    fn get_electric_ports_mut(&mut self) -> Vec<&mut Box<dyn ElectricPort>> {
-        self.electric_ports.iter_mut().collect()
-    }
-
-    fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> {
-        self.electric_ports.iter().map(|x| x.as_ref()).collect()
-    }
 }
 
 impl MessageSender for Recycler {
     fn pull_messages(&mut self, tick_id: u32) -> Vec<Message> {
-        let mut messages = self.pull_item_messages(tick_id);
-        let mut electricity_messages = self.pull_electricity_messages(tick_id);
-        messages.append(&mut electricity_messages);
-        messages
-    }
-
-    fn message_send_result(&mut self, result: MessageSendResult) {
-        match &result.message {
-            Some(message) => match &message.body {
-                MessageBody::PushItem(item) => {
-                    *self.item_output_buf.get_mut(&item.get_id()).unwrap() += 1;
-                }
-                MessageBody::SendElectricity(_) => {
-                    let sender_port = message.sender.get_electric_port();
-                    for port in &mut self.electric_ports {
-                        if port.get_id() == sender_port {
-                            if let Some(out) = port.as_mut().as_output_mut() {
-                                out.message_send_result(result);
-                                return;
-                            }
-                        }
-                    }
-                }
-            },
-            None => {}
-        }
+        let msgs = self.pull_item_messages(tick_id);
+        msgs
     }
 }
 
 impl MessageReceiver for Recycler {
     fn try_push_message(&mut self, mut message: Message) -> Option<Message> {
-        match &message.body {
-            MessageBody::PushItem(item) => {
-                let item_id = item.get_id();
-                if self.item_input.contains_key(&item_id) {
-                    let inp_buf = self.item_input_buf.get_mut(&item_id).unwrap();
-                    if *inp_buf < *self.item_input.get(&item_id).unwrap() {
-                        *inp_buf += 1;
-                        return None;
+        // match &message.body {
+        //     MessageBody::PushItem(item) => {
+        //         let item_id = item.get_id();
+        //         if self.item_input.contains_key(&item_id) {
+        //             let inp_buf = self.item_input_buf.get_mut(&item_id).unwrap();
+        //             if *inp_buf < *self.item_input.get(&item_id).unwrap() {
+        //                 *inp_buf += 1;
+        //                 return None;
+        //             }
+        //         }
+        //         Some(message)
+        //     }
+        //     _ => Some(message),
+        // }
+
+        match &message {
+            Message::FieldMessage(msg) => match &msg.body {
+                field_message::MessageBody::PushItem(item) => {
+                    if msg.refund {
+                        *self.item_output_buf.get_mut(&item.get_id()).unwrap() += 1;
+                        None
+                    } else {
+                        let item_id = item.get_id();
+                        if self.item_input.contains_key(&item_id) {
+                            let inp_buf = self.item_input_buf.get_mut(&item_id).unwrap();
+                            if *inp_buf < *self.item_input.get(&item_id).unwrap() {
+                                *inp_buf += 1;
+                                return None;
+                            }
+                        }
+                        Some(message)
                     }
                 }
-                Some(message)
-            }
-            MessageBody::SendElectricity(_) => {
-                let receiver_port = message.receiver.get_electric_port();
-                for port in &mut self.electric_ports {
-                    if port.get_id() != receiver_port {
-                        continue;
-                    }
-
-                    if let Some(inp) = port.as_input_mut() {
-                        message = inp.try_push_message(message)?;
-                    }
-                }
-
-                Some(message)
-            }
+                _ => Some(message),
+            },
             _ => Some(message),
         }
     }

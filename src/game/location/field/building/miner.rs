@@ -1,14 +1,19 @@
 use std::collections::HashMap;
 
-use super::recycler::Recycler;
-use super::*;
-
-use crate::game::common::asset_manager::{AssetId, AssetManager};
-use crate::game::common::json_reader::JsonReader;
-use crate::game::game_entity::GameEntity;
-use crate::game::hub::item::*;
-use crate::game::hub::location::surface::*;
-use crate::game::renderer::{Renderer, Sprite};
+use crate::game::{
+    common::{
+        asset_manager::{AssetId, AssetManager},
+        json_reader::JsonReader,
+    },
+    game_entity::GameEntity,
+    location::field::{
+        building::{item::ItemFactory, recycler::Recycler, Building, BuildingClone},
+        cell::surface::*,
+    },
+    message::*,
+    renderer::{Renderer, Sprite},
+    SpriteTransform, UpdateParameters,
+};
 
 pub struct Miner {
     name: String,
@@ -75,24 +80,6 @@ impl Building for Miner {
     fn get_name(&self) -> &str {
         self.name.as_str()
     }
-
-    fn get_electric_ports_mut(&mut self) -> Vec<&mut Box<dyn ElectricPort>> {
-        match &mut self.curr_recycler {
-            Some(recycler) => recycler.get_electric_ports_mut(),
-            None => {
-                vec![]
-            }
-        }
-    }
-
-    fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> {
-        match &self.curr_recycler {
-            Some(recycler) => recycler.get_electric_ports(),
-            None => {
-                vec![]
-            }
-        }
-    }
 }
 
 impl Miner {
@@ -157,13 +144,6 @@ impl MessageSender for Miner {
             None => {
                 vec![]
             }
-        }
-    }
-
-    fn message_send_result(&mut self, result: MessageSendResult) {
-        match &mut self.curr_recycler {
-            Some(recycler) => recycler.message_send_result(result),
-            None => {}
         }
     }
 }

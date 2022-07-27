@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 use std::iter;
 
-use super::*;
-use crate::game::common::direction::Direction;
-use crate::game::common::json_reader::JsonReader;
-use crate::game::common::math::Vec2;
-use crate::game::hub::item::*;
+use super::item::*;
+use crate::game::{
+    common::{direction::Direction, json_reader::JsonReader, math::Vec2},
+    game_entity::GameEntity,
+    location::field::building::{Building, BuildingClone},
+    message::*,
+    Renderer, SpriteTransform, UpdateParameters,
+};
 
 pub struct TransportBelt {
     name: String,
@@ -88,7 +91,6 @@ impl TransportBelt {
                     item.as_mut().unwrap().last_tick_moved = tick_id;
                     item.as_mut()
                         .unwrap()
-                        .item
                         .set_movement(move_from, move_to, tick_id);
                     buffer[i + 1] = item;
                 }
@@ -122,7 +124,6 @@ impl TransportBelt {
             (*out_buffer)[0]
                 .as_mut()
                 .unwrap()
-                .item
                 .set_movement(move_from, move_to, tick_id);
         }
     }
@@ -156,7 +157,7 @@ impl TransportBelt {
             return Some(item);
         }
 
-        item.item.set_movement(move_from, move_to, tick_id);
+        item.set_movement(move_from, move_to, tick_id);
         item.last_tick_moved = tick_id;
         input[0].replace(item);
         None
@@ -171,13 +172,13 @@ impl TransportBelt {
         let mut item = output_buf.last_mut().unwrap().take().unwrap();
         let move_from = self.compute_item_position(self.output, self.item_count as i32 - 1);
         let move_to = self.compute_item_position(self.output, self.item_count as i32);
-        item.item.set_movement(move_from, move_to, tick_id);
+        item.set_movement(move_from, move_to, tick_id);
         Some(item)
     }
 
     fn pull_item_failed(&mut self, mut item: TransportedItem, tick_id: u32) {
         let pos = self.compute_item_position(self.output, self.item_count as i32 - 1);
-        item.item.set_movement(pos, pos, tick_id);
+        item.set_movement(pos, pos, tick_id);
 
         let output_buf = self.item_buffers.get_mut(&self.output).unwrap();
         output_buf.last_mut().unwrap().replace(item);
@@ -191,7 +192,7 @@ impl GameEntity for TransportBelt {
             for item in buffer {
                 match item {
                     Some(item) => {
-                        item.item.update(parameters);
+                        item.update(parameters);
                     }
                     None => {}
                 }
@@ -207,7 +208,7 @@ impl GameEntity for TransportBelt {
             for item in buffer {
                 match item {
                     Some(item) => {
-                        item.item.tick(tick_id);
+                        item.tick(tick_id);
                     }
                     None => {}
                 }
@@ -221,7 +222,7 @@ impl GameEntity for TransportBelt {
             for item in buffer {
                 match item {
                     Some(item) => {
-                        item.item.render(renderer, transform.clone());
+                        item.render(renderer, transform.clone());
                     }
                     None => {}
                 }
@@ -246,14 +247,6 @@ impl Building for TransportBelt {
     fn get_name(&self) -> &str {
         &self.name
     }
-
-    fn get_electric_ports_mut(&mut self) -> Vec<&mut Box<dyn ElectricPort>> {
-        vec![]
-    }
-
-    fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> {
-        vec![]
-    }
 }
 
 impl MessageSender for TransportBelt {
@@ -262,32 +255,18 @@ impl MessageSender for TransportBelt {
 
         match pulled_item {
             Some(item) => {
-                vec![Message {
+                vec![Message::FieldMessage(field_message::Message {
                     id: 0,
-                    sender: MessageExchangeActor::new(),
-                    receiver: MessageExchangeActor::new(),
-                    target: Target::Direction(self.output),
+                    sender: field_message::MessageExchangeActor::default(),
+                    receiver: field_message::MessageExchangeActor::default(),
+                    target: field_message::Target::Directions(vec![self.output]),
                     tick_id,
-                    body: MessageBody::PushItem(item),
-                }]
+                    refund: false,
+                    body: field_message::MessageBody::PushItem(item),
+                })]
             }
             None => {
                 vec![]
-            }
-        }
-    }
-
-    fn message_send_result(&mut self, result: MessageSendResult) {
-        match result.message {
-            Some(message) => {
-                // Item failed to move.
-                if let MessageBody::PushItem(item) = message.body {
-                    self.pull_item_failed(item, message.tick_id);
-                }
-            }
-            None => {
-                // Item moved.
-                self.move_items(result.tick_id);
             }
         }
     }
@@ -295,24 +274,33 @@ impl MessageSender for TransportBelt {
 
 impl MessageReceiver for TransportBelt {
     fn try_push_message(&mut self, mut message: Message) -> Option<Message> {
-        match message.body {
-            MessageBody::PushItem(item) => {
-                if item.last_tick_moved == message.tick_id {
-                    message.body = MessageBody::PushItem(item);
-                    return Some(message);
-                }
-                let direction = Direction::from_ivec2(
-                    message.sender.get_position() - message.receiver.get_position(),
-                );
-                let push_result = self.try_push_item(item, direction, message.tick_id);
-                match push_result {
-                    Some(item) => {
-                        message.body = MessageBody::PushItem(item);
-                        Some(message)
+        match message {
+            Message::FieldMessage(ref mut msg) => match &msg.body {
+                field_message::MessageBody::PushItem(item) => {
+                    let item = item.clone();
+                    if msg.refund {
+                        self.pull_item_failed(item, msg.tick_id);
+                        None
+                    } else {
+                        if item.last_tick_moved == msg.tick_id {
+                            msg.body = field_message::MessageBody::PushItem(item);
+                            return Some(message);
+                        }
+                        let direction = Direction::from_ivec2(
+                            msg.sender.get_position() - msg.receiver.get_position(),
+                        );
+                        let push_result = self.try_push_item(item, direction, msg.tick_id);
+                        match push_result {
+                            Some(item) => {
+                                msg.body = field_message::MessageBody::PushItem(item);
+                                Some(message)
+                            }
+                            None => None,
+                        }
                     }
-                    None => None,
                 }
-            }
+                _ => Some(message),
+            },
             _ => Some(message),
         }
     }

@@ -7,21 +7,16 @@ use common::math::{IVec2, Vec2};
 
 pub mod common;
 pub mod game_entity;
+pub mod location;
+pub mod message;
 pub mod renderer;
 
-pub mod physics_scene;
-pub mod player;
-
-pub mod hub;
-mod trip;
-
-pub mod field;
-
 use game_entity::*;
-use hub::item::*;
-use hub::location::Location;
-use physics_scene::*;
-use player::Player;
+use location::{
+    field::building::item::ItemFactory,
+    physics_scene::{PhysicsScene, PhysicsSimulated},
+    Location,
+};
 use renderer::{camera::Camera, Renderer};
 
 pub const TICK_PERIOD: f32 = 1.0;
@@ -30,7 +25,6 @@ pub struct Game {
     renderer: Renderer,
     asset_manager: AssetManager,
     location: Location,
-    player: Player,
 
     from_last_tick: f32,
     tick_id: u32,
@@ -52,10 +46,7 @@ impl Game {
 
         let location = Location::new(&asset_manager);
 
-        let player = Player::new(Vec2::new(-1.0, -1.0));
-
         Game {
-            player,
             location,
             asset_manager,
             renderer,
@@ -67,18 +58,15 @@ impl Game {
 
     fn update_all(&mut self, parameters: &UpdateParameters) {
         self.location.update(parameters);
-        self.player.update(parameters);
     }
 
     fn tick_all(&mut self) {
         self.location.tick(self.tick_id);
-        self.player.tick(self.tick_id);
     }
 
     fn render_all(&mut self) {
         let transform = SpriteTransform::default();
         self.location.render(&mut self.renderer, transform.clone());
-        self.player.render(&mut self.renderer, transform);
     }
 }
 
@@ -99,7 +87,12 @@ impl EventHandler for Game {
             last_tick_id: self.tick_id,
         };
 
-        self.player.process_keyboard_input(context);
+        self.location.process_keyboard_input(context);
+
+        let hierarchy = self.location.get_bodies();
+        let mut scene = PhysicsScene::new(hierarchy);
+        let messages = scene.simulate(delta_time);
+        self.location.handle_physics_messages(messages);
 
         self.update_all(&update_parameters);
 

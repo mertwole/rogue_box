@@ -1,4 +1,5 @@
 use super::*;
+use crate::game::message::*;
 
 struct ErrorBuilding {}
 
@@ -18,12 +19,6 @@ impl Building for ErrorBuilding {
     fn get_name(&self) -> &str {
         "error"
     }
-    fn get_electric_ports_mut(&mut self) -> Vec<&mut Box<dyn ElectricPort>> {
-        vec![]
-    }
-    fn get_electric_ports(&self) -> Vec<&dyn ElectricPort> {
-        vec![]
-    }
 }
 
 impl ErrorBuilding {
@@ -36,8 +31,6 @@ impl MessageSender for ErrorBuilding {
     fn pull_messages(&mut self, _tick_id: u32) -> Vec<Message> {
         Vec::new()
     }
-
-    fn message_send_result(&mut self, _result: MessageSendResult) {}
 }
 
 impl MessageReceiver for ErrorBuilding {

@@ -5,14 +5,16 @@ use ggez::Context;
 use crate::game::common::asset_manager::AssetManager;
 use crate::game::common::math::{Math, Vec2};
 use crate::game::game_entity::*;
-use crate::game::physics_scene::*;
 use crate::game::renderer::Sprite;
 
-use crate::game::physics_scene::message::Message as PhysicsMessage;
+use crate::game::location::physics_scene::{
+    collision_data::CollisionData, message as physics_message,
+    message::MessageBody as PhysicsMessageBody, BodyCollection, *,
+};
 
 pub struct Player {
     sprite: Sprite,
-    body: Body,
+    pub body: Body,
 
     speed: f32,
     friction: f32,
@@ -33,7 +35,7 @@ impl Player {
             },
             Vec2::zero(),
         );
-        let body = Body::new_dynamic(collider, 1.0, position);
+        let body = Body::new_kinematic(collider, 1.0, position);
 
         Player {
             sprite,
@@ -104,11 +106,23 @@ impl GameEntity for Player {
 }
 
 impl PhysicsSimulated for Player {
-    fn get_all_bodies(&mut self) -> BodyCollection {
-        let mut bodies = BodyCollection::new();
+    fn get_bodies(&mut self) -> BodyHierarchyRoot {
+        let mut bodies = BodyCollection::default();
         bodies.push(&mut self.body);
-        bodies
+        BodyHierarchyRoot::new(vec![], bodies)
     }
 
-    fn handle_physics_messages(&mut self, messages: Vec<PhysicsMessage>) {}
+    fn handle_physics_messages(&mut self, messages: physics_message::MessageHierarchy) {
+        if let Some(messages) = messages.messages.get(&self.body.id) {
+            for msg in messages {
+                match &msg.body {
+                    PhysicsMessageBody::Collided(data) => {
+                        self.body
+                            .set_position(self.body.get_position() + data.normal * data.depth);
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
 }

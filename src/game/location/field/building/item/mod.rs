@@ -14,17 +14,9 @@ pub use transported_item::*;
 pub struct ItemId(u64);
 
 #[derive(Clone)]
-struct ItemMovement {
-    from: Vec2,
-    to: Vec2,
-    tick_id: u32,
-}
-
 pub struct Item {
     id: ItemId,
     sprite: Sprite,
-
-    movement: Option<ItemMovement>,
 }
 
 impl Item {
@@ -34,7 +26,6 @@ impl Item {
         Item {
             id: ItemId(0),
             sprite,
-            movement: None,
         }
     }
 
@@ -60,13 +51,10 @@ impl Item {
                 };
 
                 let sprite = Sprite::new(AssetManager::get_asset_id(tex_path.as_str()));
-                let new_item = Item {
+                Item {
                     id: ItemFactory::get_item_id_by_name(name.as_str()),
                     sprite,
-                    movement: None,
-                };
-
-                new_item
+                }
             }
             _ => {
                 log::error!(
@@ -79,44 +67,5 @@ impl Item {
 
     pub fn get_id(&self) -> ItemId {
         self.id
-    }
-
-    pub fn set_movement(&mut self, from: Vec2, to: Vec2, tick_id: u32) {
-        self.movement = Some(ItemMovement { from, to, tick_id });
-    }
-}
-
-impl GameEntity for Item {
-    fn update(&mut self, parameters: &UpdateParameters) {
-        match &self.movement {
-            None => {
-                self.sprite.local_transform.translation = Vec2::zero();
-            }
-            Some(movement) => {
-                if movement.tick_id + 1 == parameters.last_tick_id {
-                    let interpolation = parameters.from_last_tick / crate::game::TICK_PERIOD;
-                    self.sprite.local_transform.translation =
-                        movement.from + (movement.to - movement.from) * interpolation;
-                } else {
-                    self.sprite.local_transform.translation = movement.to;
-                }
-            }
-        }
-    }
-
-    fn tick(&mut self, tick_id: u32) {}
-
-    fn render(&mut self, renderer: &mut Renderer, transform: SpriteTransform) {
-        renderer.queue_render_sprite(self.sprite.clone(), transform);
-    }
-}
-
-impl Clone for Item {
-    fn clone(&self) -> Item {
-        Item {
-            id: self.id,
-            sprite: self.sprite.clone(),
-            movement: self.movement.clone(),
-        }
     }
 }

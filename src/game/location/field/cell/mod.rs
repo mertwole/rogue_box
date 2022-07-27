@@ -1,12 +1,20 @@
-use super::surface::Surface;
 use crate::game::common::math::Vec2;
-use crate::game::field::message::*;
 use crate::game::game_entity::*;
-use crate::game::hub::building::Building;
 use crate::game::renderer::Renderer;
 
-use crate::game::physics_scene::message as physics_message;
-use crate::game::physics_scene::{Body, BodyCollection, Collider, ColliderShape, PhysicsSimulated};
+use crate::game::{
+    location::{
+        field::building::Building,
+        physics_scene::{
+            message as physics_message, Body, BodyCollection, BodyHierarchyRoot, Collider,
+            ColliderShape, PhysicsSimulated,
+        },
+    },
+    message::*,
+};
+
+pub mod surface;
+use surface::Surface;
 
 #[derive(Default)]
 pub struct Cell {
@@ -24,7 +32,7 @@ impl Cell {
         }
     }
 
-    pub fn build(&mut self, building: Box<dyn Building>) {
+    pub fn build(&mut self, building: Box<dyn Building>, center: Vec2) {
         self.building = Some(building);
 
         self.body = Some(Body::new_static(
@@ -34,7 +42,7 @@ impl Cell {
                 },
                 Vec2::zero(),
             ),
-            Vec2::zero(),
+            center,
         ));
     }
 }
@@ -78,25 +86,16 @@ impl MessageSender for Cell {
             }
         }
     }
-
-    fn message_send_result(&mut self, result: MessageSendResult) {
-        match &mut self.building {
-            Some(building) => {
-                building.message_send_result(result);
-            }
-            None => {}
-        }
-    }
 }
 
 impl PhysicsSimulated for Cell {
-    fn get_all_bodies(&mut self) -> BodyCollection {
-        let mut bc = BodyCollection::new();
+    fn get_bodies(&mut self) -> BodyHierarchyRoot {
+        let mut bodies = BodyCollection::default();
         if self.body.is_some() {
-            bc.push(self.body.as_mut().unwrap());
+            bodies.push(self.body.as_mut().unwrap());
         }
-        bc
+        BodyHierarchyRoot::new(vec![], bodies)
     }
 
-    fn handle_physics_messages(&mut self, messages: Vec<physics_message::Message>) {}
+    fn handle_physics_messages(&mut self, messages: physics_message::MessageHierarchy) {}
 }

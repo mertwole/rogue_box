@@ -15,13 +15,15 @@ impl BodyId {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub enum BodyType {
     Static,
+    Kinematic,
     Dynamic,
 }
 
 pub struct Body {
-    pub(super) id: BodyId,
+    pub id: BodyId,
     pub(super) body_type: BodyType,
     pub(super) position: Vec2,
     pub(super) collider_initial_position: Vec2,
@@ -51,6 +53,22 @@ impl Body {
         }
     }
 
+    pub fn new_kinematic(collider: Collider, mass: f32, position: Vec2) -> Body {
+        let collider_initial_position = collider.position;
+        Body {
+            id: BodyId::next(),
+            body_type: BodyType::Kinematic,
+            position,
+            collider_initial_position,
+            collider,
+            mass,
+            inv_mass: 1.0 / mass,
+            bouncity: 0.0,
+            velocity: Vec2::zero(),
+            force: Vec2::zero(),
+        }
+    }
+
     pub fn new_static(collider: Collider, position: Vec2) -> Body {
         let collider_initial_position = collider.position;
         Body {
@@ -65,6 +83,10 @@ impl Body {
             velocity: Vec2::zero(),
             force: Vec2::zero(),
         }
+    }
+
+    pub fn is_kinematic(&self) -> bool {
+        self.body_type == BodyType::Kinematic
     }
 
     pub fn get_position(&self) -> Vec2 {
