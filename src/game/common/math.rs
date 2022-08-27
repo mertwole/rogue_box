@@ -141,6 +141,14 @@ impl Vec2 {
     pub fn dot(self, rhs: Vec2) -> f32 {
         self.x * rhs.x + self.y * rhs.y
     }
+
+    pub fn min(a: Vec2, b: Vec2) -> Vec2 {
+        Vec2::new(Math::min(a.x, b.x), Math::min(a.y, b.y))
+    }
+
+    pub fn max(a: Vec2, b: Vec2) -> Vec2 {
+        Vec2::new(Math::max(a.x, b.x), Math::max(a.y, b.y))
+    }
 }
 
 impl ops::Add<Vec2> for Vec2 {

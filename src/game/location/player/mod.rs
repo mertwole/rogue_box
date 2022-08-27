@@ -94,7 +94,7 @@ impl Player {
 
 impl GameEntity for Player {
     fn update(&mut self, parameters: &UpdateParameters) {
-        self.apply_movement(parameters.delta_time);
+        //self.apply_movement(parameters.delta_time);
     }
 
     fn tick(&mut self, tick_id: u32) {}
@@ -114,15 +114,28 @@ impl PhysicsSimulated for Player {
 
     fn handle_physics_messages(&mut self, messages: physics_message::MessageHierarchy) {
         if let Some(messages) = messages.messages.get(&self.body.id) {
-            for msg in messages {
-                match &msg.body {
-                    PhysicsMessageBody::Collided(data) => {
-                        self.body
-                            .set_position(self.body.get_position() + data.normal * data.depth);
-                    }
-                    _ => {}
-                }
-            }
+            let collision_depth_sum = messages
+                .iter()
+                .filter_map(|msg| match &msg.body {
+                    PhysicsMessageBody::Collided(data) => Some(data.normal * data.depth),
+                    _ => None,
+                })
+                .fold(Vec2::zero(), |acc, x| acc + x);
+
+            // Resolving case when the player is moving along a lane of boxes.
+            let position_change =
+                if f32::abs(collision_depth_sum.x) > f32::abs(collision_depth_sum.y) {
+                    Vec2::new(collision_depth_sum.x, 0.0)
+                } else {
+                    Vec2::new(0.0, collision_depth_sum.y)
+                };
+
+            self.body
+                .set_position(self.body.get_position() + position_change);
         }
+    }
+
+    fn physics_update(&mut self, delta_time: f32) {
+        self.apply_movement(delta_time);
     }
 }

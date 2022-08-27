@@ -171,6 +171,11 @@ impl PhysicsSimulated for Field {
     }
 
     fn handle_physics_messages(&mut self, messages: physics_message::MessageHierarchy) {}
+
+    fn physics_update(&mut self, delta_time: f32) {
+        self.into_iter()
+            .for_each(|cell| cell.physics_update(delta_time));
+    }
 }
 
 pub struct Iter<'a, Cell> {

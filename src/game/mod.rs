@@ -89,10 +89,13 @@ impl EventHandler for Game {
 
         self.location.process_keyboard_input(context);
 
-        let hierarchy = self.location.get_bodies();
-        let mut scene = PhysicsScene::new(hierarchy);
-        let messages = scene.simulate(delta_time);
-        self.location.handle_physics_messages(messages);
+        for _ in 0..5 {
+            let hierarchy = self.location.get_bodies();
+            let mut scene = PhysicsScene::new(hierarchy);
+            let messages = scene.simulate(delta_time / 5.0);
+            self.location.handle_physics_messages(messages);
+            self.location.physics_update(delta_time / 5.0);
+        }
 
         self.update_all(&update_parameters);
 

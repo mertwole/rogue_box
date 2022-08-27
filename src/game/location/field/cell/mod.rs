@@ -98,4 +98,6 @@ impl PhysicsSimulated for Cell {
     }
 
     fn handle_physics_messages(&mut self, messages: physics_message::MessageHierarchy) {}
+
+    fn physics_update(&mut self, delta_time: f32) {}
 }

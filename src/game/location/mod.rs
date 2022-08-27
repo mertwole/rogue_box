@@ -180,4 +180,8 @@ impl PhysicsSimulated for Location {
         let player_nested = messages.nested.pop().unwrap();
         self.player.handle_physics_messages(player_nested);
     }
+
+    fn physics_update(&mut self, delta_time: f32) {
+        self.player.physics_update(delta_time);
+    }
 }
