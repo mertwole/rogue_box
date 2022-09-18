@@ -12,16 +12,22 @@ use crate::game::{
     renderer::Renderer,
 };
 
+use std::iter::once;
+
 pub mod building;
 pub mod cell;
+pub mod laying_object;
 pub mod message;
 
 use cell::Cell;
+use laying_object::LayingObject;
 
 pub struct Field {
     min_coord: IVec2,
     max_coord: IVec2,
     cells: Vec<Vec<Cell>>,
+    player: Player,
+    laying_objects: Vec<LayingObject>,
 }
 
 impl Field {
@@ -37,10 +43,23 @@ impl Field {
             cells.push(cells_row);
         }
 
+        let test_laying_objects = vec![
+            LayingObject::new(Vec2::new(4.0, 4.0)),
+            LayingObject::new(Vec2::new(4.0, 4.0)),
+            LayingObject::new(Vec2::new(4.0, 4.0)),
+            LayingObject::new(Vec2::new(4.0, 4.0)),
+            LayingObject::new(Vec2::new(4.0, 4.0)),
+            LayingObject::new(Vec2::new(4.0, 4.0)),
+            LayingObject::new(Vec2::new(4.0, 4.0)),
+            LayingObject::new(Vec2::new(4.0, 4.0)),
+        ];
+
         Field {
             min_coord,
             max_coord,
             cells,
+            player: Player::new(Vec2::new(2.5, 2.5)),
+            laying_objects: test_laying_objects,
         }
     }
 
@@ -59,6 +78,11 @@ impl Field {
         let arr_coords = coords - self.min_coord;
         &mut self.cells[arr_coords.x as usize][arr_coords.y as usize]
     }
+
+    // TODO : IT'S DEBUG
+    pub fn process_keyboard_input(&mut self, context: &ggez::Context) {
+        self.player.process_keyboard_input(context);
+    }
 }
 
 impl GameEntity for Field {
@@ -68,6 +92,12 @@ impl GameEntity for Field {
                 cell.update(parameters);
             }
         }
+
+        for laying_obj in &mut self.laying_objects {
+            laying_obj.update(parameters);
+        }
+
+        self.player.update(parameters);
     }
 
     fn tick(&mut self, tick_id: u32) {
@@ -77,6 +107,12 @@ impl GameEntity for Field {
                 cell.tick(tick_id);
             }
         }
+
+        for laying_obj in &mut self.laying_objects {
+            laying_obj.tick(tick_id);
+        }
+
+        self.player.tick(tick_id);
     }
 
     fn render(&mut self, renderer: &mut Renderer, transform: SpriteTransform) {
@@ -101,6 +137,12 @@ impl GameEntity for Field {
                 cell.render(renderer, transform.combine(&cell_transform));
             }
         }
+
+        for laying_obj in &mut self.laying_objects {
+            laying_obj.render(renderer, transform.clone());
+        }
+
+        self.player.render(renderer, transform);
     }
 }
 
@@ -162,19 +204,40 @@ impl MessageReceiver for Field {
     }
 }
 
+// TODO : Automatize in macro.
 impl PhysicsSimulated for Field {
     fn get_bodies(&mut self) -> BodyHierarchyRoot {
         BodyHierarchyRoot::new(
-            self.into_iter().map(|cell| cell.get_bodies()).collect(),
+            self.cells
+                .iter_mut()
+                .flatten()
+                .map(|cell| cell.get_bodies())
+                .chain(once(self.player.get_bodies()))
+                .chain(self.laying_objects.iter_mut().map(|obj| obj.get_bodies()))
+                .collect(),
             BodyCollection::default(),
         )
     }
 
-    fn handle_physics_messages(&mut self, messages: physics_message::MessageHierarchy) {}
+    fn handle_physics_messages(&mut self, mut messages: physics_message::MessageHierarchy) {
+        for laying_obj in self.laying_objects.iter_mut().rev() {
+            laying_obj.handle_physics_messages(messages.nested.pop().unwrap());
+        }
+        self.player
+            .handle_physics_messages(messages.nested.pop().unwrap());
+        let mut cell_messages = messages.nested.into_iter().rev();
+        for cell in self.into_iter() {
+            cell.handle_physics_messages(cell_messages.next().unwrap());
+        }
+    }
 
     fn physics_update(&mut self, delta_time: f32) {
         self.into_iter()
             .for_each(|cell| cell.physics_update(delta_time));
+        self.laying_objects
+            .iter_mut()
+            .for_each(|obj| obj.physics_update(delta_time));
+        self.player.physics_update(delta_time);
     }
 }
 

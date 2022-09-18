@@ -131,11 +131,12 @@ impl<'a> PhysicsScene<'a> {
         if dynamic_body_count < 2 {
             return messages;
         }
+
         for a in 0..(dynamic_body_count - 1) {
             for b in (a + 1)..dynamic_body_count {
-                let (head, tail) = self.hierarchy.bodies.dynamic_bodies.split_at_mut(a);
-                let a_body = &mut tail[0];
-                let b_body = &mut head[b];
+                let (head, tail) = self.hierarchy.bodies.dynamic_bodies.split_at_mut(a + 1);
+                let b_body = &mut tail[b - a - 1];
+                let a_body = &mut head[a];
 
                 let msgs = resolve_collision(
                     a_body,

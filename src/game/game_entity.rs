@@ -7,6 +7,8 @@ pub struct UpdateParameters {
     pub last_tick_id: u32,
 }
 
+// TODO : Default implementations.
+// add macro for redirectiong calls to children implementing FameEntity?
 pub trait GameEntity {
     fn update(&mut self, parameters: &UpdateParameters);
     fn tick(&mut self, tick_id: u32);

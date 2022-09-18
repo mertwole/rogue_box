@@ -19,7 +19,6 @@ use physics_scene::{BodyCollection, BodyHierarchyRoot, PhysicsSimulated};
 
 pub struct Location {
     field: Field,
-    player: Player,
 }
 
 impl Location {
@@ -129,27 +128,22 @@ impl Location {
         let cell = field.get_cell_mut(IVec2::new(2, 1)).unwrap();
         cell.build(Box::from(tb), Vec2::new(2.0, 1.0));
 
-        Location {
-            field,
-            player: Player::new(Vec2::new(2.5, 2.5)),
-        }
+        Location { field }
     }
 
     // TODO : IT'S DEBUG
     pub fn process_keyboard_input(&mut self, context: &Context) {
-        self.player.process_keyboard_input(context);
+        self.field.process_keyboard_input(context);
     }
 }
 
 impl GameEntity for Location {
     fn update(&mut self, parameters: &UpdateParameters) {
         self.field.update(parameters);
-        self.player.update(parameters);
     }
 
     fn tick(&mut self, tick_id: u32) {
         self.field.tick(tick_id);
-        self.player.tick(tick_id);
 
         let mut messages = self.field.pull_messages(tick_id);
         loop {
@@ -164,24 +158,20 @@ impl GameEntity for Location {
 
     fn render(&mut self, renderer: &mut Renderer, transform: SpriteTransform) {
         self.field.render(renderer, transform.clone());
-        self.player.render(renderer, transform);
     }
 }
 
 impl PhysicsSimulated for Location {
     fn get_bodies(&mut self) -> BodyHierarchyRoot {
-        BodyHierarchyRoot::new(
-            vec![self.field.get_bodies(), self.player.get_bodies()],
-            BodyCollection::default(),
-        )
+        BodyHierarchyRoot::new(vec![self.field.get_bodies()], BodyCollection::default())
     }
 
     fn handle_physics_messages(&mut self, mut messages: physics_message::MessageHierarchy) {
-        let player_nested = messages.nested.pop().unwrap();
-        self.player.handle_physics_messages(player_nested);
+        self.field
+            .handle_physics_messages(messages.nested.pop().unwrap())
     }
 
     fn physics_update(&mut self, delta_time: f32) {
-        self.player.physics_update(delta_time);
+        self.field.physics_update(delta_time);
     }
 }

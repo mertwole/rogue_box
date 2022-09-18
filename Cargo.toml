@@ -10,6 +10,7 @@ ggez = "0.7"
 include_dir = "0.7.2"
 log = "0.4.17"
 serde_json = "1.0.85"
+rand = "0.8.5"
 
 imgui = "0.8.0"
 imgui-gfx-renderer = "0.8.0"
