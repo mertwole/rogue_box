@@ -44,14 +44,11 @@ impl Field {
         }
 
         let test_laying_objects = vec![
-            LayingObject::new(Vec2::new(4.0, 4.0)),
-            LayingObject::new(Vec2::new(4.0, 4.0)),
-            LayingObject::new(Vec2::new(4.0, 4.0)),
-            LayingObject::new(Vec2::new(4.0, 4.0)),
-            LayingObject::new(Vec2::new(4.0, 4.0)),
-            LayingObject::new(Vec2::new(4.0, 4.0)),
-            LayingObject::new(Vec2::new(4.0, 4.0)),
-            LayingObject::new(Vec2::new(4.0, 4.0)),
+            LayingObject::new(Vec2::new(5.0, 5.0), 100.0),
+            LayingObject::new(Vec2::new(5.0, 4.0), 10.0),
+            LayingObject::new(Vec2::new(5.0, 3.0), 5.0),
+            LayingObject::new(Vec2::new(5.0, 2.0), 1.0),
+            LayingObject::new(Vec2::new(5.0, 1.0), 0.1),
         ];
 
         Field {

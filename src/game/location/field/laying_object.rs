@@ -10,11 +10,8 @@ pub struct LayingObject {
 }
 
 impl LayingObject {
-    pub fn new(position: Vec2) -> LayingObject {
-        let tex = AssetManager::get_asset_id(&format!(
-            "textures/{}.png",
-            rand::random::<u32>() % 23 + 13
-        ));
+    pub fn new(position: Vec2, mass: f32) -> LayingObject {
+        let tex = AssetManager::get_asset_id("textures/13.png");
         let sprite = Sprite::new(tex);
 
         let collider = Collider::new(
@@ -23,7 +20,7 @@ impl LayingObject {
             },
             Vec2::zero(),
         );
-        let body = Body::new_dynamic(collider, 1.0, position);
+        let body = Body::new_dynamic(collider, mass, position, 0.99);
 
         LayingObject { sprite, body }
     }

@@ -78,7 +78,8 @@ impl Player {
         };
 
         let movement = self.velocity * delta_time;
-        self.body.set_position(self.body.get_position() + movement);
+        self.body
+            .set_position_kinematic(self.body.get_position() + movement, delta_time);
 
         self.velocity =
             self.velocity + acceleration * delta_time * self.acceleration_impact * self.speed;

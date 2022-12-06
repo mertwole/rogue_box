@@ -37,6 +37,12 @@ pub struct IVec2 {
     pub y: isize,
 }
 
+impl std::fmt::Display for IVec2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
 impl IVec2 {
     pub fn new(x: isize, y: isize) -> IVec2 {
         IVec2 { x, y }
@@ -107,6 +113,12 @@ impl ops::Div<isize> for IVec2 {
 pub struct Vec2 {
     pub x: f32,
     pub y: f32,
+}
+
+impl std::fmt::Display for Vec2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
 }
 
 impl Vec2 {

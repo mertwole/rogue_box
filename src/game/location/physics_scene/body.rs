@@ -31,13 +31,14 @@ pub struct Body {
     pub(super) mass: f32,
     pub(super) inv_mass: f32,
     pub(super) bouncity: f32,
+    pub(super) ground_friction: f32,
 
     pub(super) velocity: Vec2,
     pub(super) force: Vec2,
 }
 
 impl Body {
-    pub fn new_dynamic(collider: Collider, mass: f32, position: Vec2) -> Body {
+    pub fn new_dynamic(collider: Collider, mass: f32, position: Vec2, friction: f32) -> Body {
         let collider_initial_position = collider.position;
         Body {
             id: BodyId::next(),
@@ -48,6 +49,7 @@ impl Body {
             mass,
             inv_mass: 1.0 / mass,
             bouncity: 0.0,
+            ground_friction: friction,
             velocity: Vec2::zero(),
             force: Vec2::zero(),
         }
@@ -64,6 +66,7 @@ impl Body {
             mass,
             inv_mass: 1.0 / mass,
             bouncity: 0.0,
+            ground_friction: 0.0,
             velocity: Vec2::zero(),
             force: Vec2::zero(),
         }
@@ -80,6 +83,7 @@ impl Body {
             mass: 0.0,
             inv_mass: 0.0,
             bouncity: 0.0,
+            ground_friction: 0.0,
             velocity: Vec2::zero(),
             force: Vec2::zero(),
         }
@@ -94,6 +98,11 @@ impl Body {
     }
 
     pub fn set_position(&mut self, position: Vec2) {
+        self.position = position;
+    }
+
+    pub fn set_position_kinematic(&mut self, position: Vec2, delta_time: f32) {
+        self.velocity = (position - self.position) / delta_time;
         self.position = position;
     }
 }

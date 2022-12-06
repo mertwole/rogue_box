@@ -167,8 +167,11 @@ impl<'a> PhysicsScene<'a> {
 
     fn move_bodies(&mut self, delta_time: f32) {
         for body in &mut self.hierarchy.bodies.dynamic_bodies {
-            body.velocity = body.velocity + body.force * delta_time * body.inv_mass;
-            body.position = body.position + body.velocity * delta_time;
+            if !body.is_kinematic() {
+                body.velocity = body.velocity + body.force * delta_time * body.inv_mass;
+                body.velocity = body.velocity * f32::powf(1.0 - body.ground_friction, delta_time);
+                body.position = body.position + body.velocity * delta_time;
+            }
         }
     }
 
@@ -213,7 +216,7 @@ fn resolve_collision(
             let relative_velocity = b.velocity - a.velocity;
             let velocity_along_normal = relative_velocity.dot(data.normal);
 
-            if velocity_along_normal <= 0.0 {
+            if velocity_along_normal < 0.0 {
                 let inv_sum = a.inv_mass + b.inv_mass;
                 let impulse = -1.0 * (1.0 + bouncity) * velocity_along_normal / inv_sum;
                 let impulse_vec = data.normal * impulse;
