@@ -5,6 +5,7 @@ use super::item::*;
 use crate::game::{
     common::{direction::Direction, json_reader::JsonReader, math::Vec2},
     game_entity::GameEntity,
+    gui::with_gui::*,
     location::field::building::{Building, BuildingClone},
     message::*,
     Renderer, SpriteTransform, UpdateParameters,
@@ -229,6 +230,10 @@ impl GameEntity for TransportBelt {
             }
         }
     }
+}
+
+impl WithGui for TransportBelt {
+    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {}
 }
 
 impl BuildingClone for TransportBelt {

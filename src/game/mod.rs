@@ -21,6 +21,8 @@ use location::{
 };
 use renderer::{camera::Camera, Renderer};
 
+use self::gui::with_gui::WithGui;
+
 pub const TICK_PERIOD: f32 = 1.0;
 
 pub struct Game {
@@ -32,6 +34,7 @@ pub struct Game {
     from_last_tick: f32,
     tick_id: u32,
     frame_time: f32,
+    avg_frame_time: f32,
     frames_times_collected: u32,
 }
 
@@ -57,6 +60,7 @@ impl Game {
             from_last_tick: 0.0,
             tick_id: 0,
             frame_time: 0.0,
+            avg_frame_time: 0.0,
             frames_times_collected: 0,
         }
     }
@@ -88,7 +92,7 @@ impl EventHandler for Game {
             self.tick_all();
             self.tick_id += 1;
 
-            self.gui.frame_time = self.frame_time / (self.frames_times_collected as f32);
+            self.avg_frame_time = self.frame_time / (self.frames_times_collected as f32);
             self.frame_time = 0.0;
             self.frames_times_collected = 0;
         }
@@ -111,9 +115,6 @@ impl EventHandler for Game {
 
         self.update_all(&update_parameters);
 
-        self.gui.from_last_tick = self.from_last_tick;
-        self.gui.tick_id = self.tick_id;
-
         Ok(())
     }
 
@@ -122,7 +123,23 @@ impl EventHandler for Game {
 
         self.render_all();
         self.renderer.render_to_screen(context, &self.asset_manager);
-        self.gui.render(context, 1.0);
+        let (gui_width, gui_height) = ggez::graphics::drawable_size(context);
+        self.gui.render(context, 1.0, |ui| {
+            self.location
+                .render_gui(ui, Vec2::new(gui_width, gui_height));
+
+            imgui::Window::new("debug info")
+                .size([200.0, 100.0], imgui::Condition::Always)
+                .position_pivot([1.0, 0.0])
+                .position([gui_width, 0.0], imgui::Condition::Always)
+                .flags(imgui::WindowFlags::NO_RESIZE | imgui::WindowFlags::NO_COLLAPSE)
+                .build(&ui, || {
+                    ui.text(format!("tick id: {}", self.tick_id));
+                    ui.text(format!("from last tick: {}", self.from_last_tick));
+                    ui.text(format!("avg frame time: {}", self.avg_frame_time));
+                    ui.text(format!("avg fps: {}", 1.0 / self.avg_frame_time));
+                });
+        });
 
         graphics::present(context)
     }

@@ -202,6 +202,10 @@ impl GameEntity for Recycler {
     }
 }
 
+impl WithGui for Recycler {
+    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {}
+}
+
 impl BuildingClone for Recycler {
     fn clone_box(&self) -> Box<dyn Building> {
         let mut item_input_buf = self.item_input_buf.clone();

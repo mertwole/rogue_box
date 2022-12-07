@@ -5,13 +5,13 @@ use crate::game::common::{
     direction::Direction,
     math::{IVec2, Vec2},
 };
-use crate::game::{game_entity::*, location::player::Player, message::*, renderer::Renderer};
+use crate::game::{game_entity::*, gui::with_gui::*, message::*, renderer::Renderer};
 pub mod field;
 pub mod physics_scene;
 mod player;
 
 use field::{
-    building::{item::ItemFactory, transport_belt::TransportBelt},
+    building::{craft_station::CraftStation, item::ItemFactory, transport_belt::TransportBelt},
     cell::{surface::SurfaceFactory, Cell},
     Field,
 };
@@ -127,6 +127,10 @@ impl Location {
         // setup
         let cell = field.get_cell_mut(IVec2::new(2, 1)).unwrap();
         cell.build(Box::from(tb), Vec2::new(2.0, 1.0));
+        // DEBUG CRAFT STATION
+        let craft_station = CraftStation::new();
+        let cell = field.get_cell_mut(IVec2::new(4, 1)).unwrap();
+        cell.build(Box::from(craft_station), Vec2::new(4.0, 1.0));
 
         Location { field }
     }
@@ -173,5 +177,11 @@ impl PhysicsSimulated for Location {
 
     fn physics_update(&mut self, delta_time: f32) {
         self.field.physics_update(delta_time);
+    }
+}
+
+impl WithGui for Location {
+    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {
+        self.field.render_gui(ui, screen_size);
     }
 }

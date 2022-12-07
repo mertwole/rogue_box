@@ -4,6 +4,7 @@ use crate::game::{
         math::{IVec2, Math, Vec2},
     },
     game_entity::*,
+    gui::with_gui::*,
     location::{
         physics_scene::{BodyCollection, BodyHierarchyRoot, PhysicsSimulated},
         player::Player,
@@ -235,6 +236,14 @@ impl PhysicsSimulated for Field {
             .iter_mut()
             .for_each(|obj| obj.physics_update(delta_time));
         self.player.physics_update(delta_time);
+    }
+}
+
+impl WithGui for Field {
+    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {
+        for cell in self.into_iter() {
+            cell.render_gui(ui, screen_size);
+        }
     }
 }
 

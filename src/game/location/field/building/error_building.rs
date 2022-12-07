@@ -1,5 +1,4 @@
 use super::*;
-use crate::game::message::*;
 
 struct ErrorBuilding {}
 
@@ -7,6 +6,10 @@ impl GameEntity for ErrorBuilding {
     fn update(&mut self, _parameters: &UpdateParameters) {}
     fn tick(&mut self, _tick_id: u32) {}
     fn render(&mut self, _renderer: &mut Renderer, _transform: SpriteTransform) {}
+}
+
+impl WithGui for ErrorBuilding {
+    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {}
 }
 
 impl BuildingClone for ErrorBuilding {

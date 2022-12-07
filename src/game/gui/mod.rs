@@ -10,6 +10,8 @@ use imgui_gfx_renderer::*;
 
 use std::time::Instant;
 
+pub mod with_gui;
+
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 struct MouseState {
     pos: (i32, i32),
@@ -24,19 +26,13 @@ pub struct Gui {
     pub renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
     mouse_state: MouseState,
-
-    pub tick_id: u32,
-    pub from_last_tick: f32,
-    pub frame_time: f32,
 }
 
 impl Gui {
     pub fn new(ctx: &mut Context) -> Self {
-        // Create the imgui object
         let mut imgui = imgui::Context::create();
         let (factory, gfx_device, _, _, _) = graphics::gfx_objects(ctx);
 
-        // Shaders
         let shaders = {
             let version = gfx_device.get_info().shading_language;
             if version.is_embedded {
@@ -54,8 +50,7 @@ impl Gui {
             }
         };
 
-        // Renderer
-        let mut renderer = Renderer::init(&mut imgui, &mut *factory, shaders).unwrap();
+        let renderer = Renderer::init(&mut imgui, &mut *factory, shaders).unwrap();
 
         {
             let mut io = imgui.io_mut();
@@ -83,24 +78,22 @@ impl Gui {
             io[Key::Z] = KeyCode::Z as _;
         }
 
-        // Create instance
         Self {
             imgui,
             renderer,
             last_frame: Instant::now(),
             mouse_state: MouseState::default(),
-
-            tick_id: 0,
-            from_last_tick: 0.0,
-            frame_time: 0.0,
         }
     }
 
-    pub fn render(&mut self, ctx: &mut Context, hidpi_factor: f32) {
-        // Update mouse
+    pub fn render<F: FnOnce(&Ui) -> ()>(
+        &mut self,
+        ctx: &mut Context,
+        hidpi_factor: f32,
+        render_fn: F,
+    ) {
         self.update_mouse();
 
-        // Create new frame
         let now = Instant::now();
         let delta = now - self.last_frame;
         let delta_s = delta.as_secs() as f32 + delta.subsec_nanos() as f32 / 1_000_000_000.0;
@@ -112,23 +105,9 @@ impl Gui {
         self.imgui.io_mut().delta_time = delta_s;
 
         let ui = self.imgui.frame();
-        let mut show = true;
 
-        // Various ui things
-        {
-            Window::new("debug info")
-                .size([200.0, 100.0], imgui::Condition::Always)
-                .position([0.0, 0.0], imgui::Condition::Always)
-                .build(&ui, || {
-                    ui.text(format!("tick id: {}", self.tick_id));
-                    ui.text(format!("from last tick: {}", self.from_last_tick));
-                    ui.text(format!("avg frame time: {}", self.frame_time));
-                    ui.text(format!("avg fps: {}", 1.0 / self.frame_time));
-                });
-            //ui.show_demo_window(&mut show);
-        }
+        render_fn(&ui);
 
-        // Render
         let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);
         let draw_data = ui.render();
         self.renderer

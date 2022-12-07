@@ -1,5 +1,6 @@
 use crate::game::common::math::Vec2;
 use crate::game::game_entity::*;
+use crate::game::gui::with_gui::*;
 use crate::game::renderer::Renderer;
 
 use crate::game::{
@@ -64,6 +65,14 @@ impl GameEntity for Cell {
         self.surface.render(renderer, transform.clone());
         if let Some(building) = self.building.as_mut() {
             building.render(renderer, transform);
+        }
+    }
+}
+
+impl WithGui for Cell {
+    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {
+        if let Some(building) = self.building.as_mut() {
+            building.render_gui(ui, screen_size);
         }
     }
 }

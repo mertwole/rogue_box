@@ -6,6 +6,7 @@ use crate::game::{
         json_reader::JsonReader,
     },
     game_entity::GameEntity,
+    gui::with_gui::*,
     location::field::{
         building::{item::ItemFactory, recycler::Recycler, Building, BuildingClone},
         cell::surface::*,
@@ -46,6 +47,10 @@ impl GameEntity for Miner {
         let sprite = Sprite::new(self.texture);
         renderer.queue_render_sprite(sprite, transform);
     }
+}
+
+impl WithGui for Miner {
+    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {}
 }
 
 impl BuildingClone for Miner {
