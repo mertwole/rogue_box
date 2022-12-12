@@ -1,14 +1,21 @@
 use ggez::event::{KeyCode, KeyMods, MouseButton};
-use ggez::graphics;
+use ggez::graphics::{self, BackendSpec};
 use ggez::Context;
 
-use gfx_core::{handle::RenderTargetView, memory::Typed};
-use gfx_device_gl;
+use gfx_core::{
+    handle::RenderTargetView,
+    memory::Typed,
+    texture::{FilterMethod, SamplerInfo, WrapMode},
+    Factory,
+};
 
 use imgui::*;
 use imgui_gfx_renderer::*;
 
+use std::collections::HashMap;
 use std::time::Instant;
+
+use super::common::asset_manager::{AssetId, AssetManager};
 
 pub mod with_gui;
 
@@ -26,6 +33,34 @@ pub struct Gui {
     pub renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
     mouse_state: MouseState,
+    loaded_images: HashMap<AssetId, TextureId>,
+}
+
+pub struct GuiRenderParams<'a> {
+    pub ui: &'a Ui<'a>,
+    renderer: &'a mut Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
+    asset_manager: &'a AssetManager,
+    loaded_images: &'a HashMap<AssetId, TextureId>,
+    ctx: &'a mut Context,
+}
+
+impl GuiRenderParams<'_> {
+    pub fn get_or_load_texture_id(&mut self, asset_id: AssetId) -> TextureId {
+        match self.loaded_images.get(&asset_id) {
+            Some(loaded) => *loaded,
+            None => {
+                let tex = self.asset_manager.get_texture(asset_id);
+                let tex_view = tex.as_ref().get_raw_texture_view();
+                let backend: ggez::graphics::GlBackendSpec =
+                    ggez::conf::Conf::default().backend.into();
+                let shader_resource = backend.raw_to_typed_shader_resource(tex_view);
+                let sampler_info = SamplerInfo::new(FilterMethod::Bilinear, WrapMode::Clamp);
+                let factory = graphics::gfx_objects(self.ctx).0;
+                let sampler = factory.create_sampler(sampler_info);
+                self.renderer.textures().insert((shader_resource, sampler))
+            }
+        }
+    }
 }
 
 impl Gui {
@@ -53,7 +88,7 @@ impl Gui {
         let renderer = Renderer::init(&mut imgui, &mut *factory, shaders).unwrap();
 
         {
-            let mut io = imgui.io_mut();
+            let io = imgui.io_mut();
             io[Key::Tab] = KeyCode::Tab as _;
             io[Key::LeftArrow] = KeyCode::Left as _;
             io[Key::RightArrow] = KeyCode::Right as _;
@@ -83,12 +118,14 @@ impl Gui {
             renderer,
             last_frame: Instant::now(),
             mouse_state: MouseState::default(),
+            loaded_images: HashMap::new(),
         }
     }
 
-    pub fn render<F: FnOnce(&Ui) -> ()>(
+    pub fn render<F: FnOnce(GuiRenderParams) -> ()>(
         &mut self,
         ctx: &mut Context,
+        asset_manager: &AssetManager,
         hidpi_factor: f32,
         render_fn: F,
     ) {
@@ -106,7 +143,13 @@ impl Gui {
 
         let ui = self.imgui.frame();
 
-        render_fn(&ui);
+        render_fn(GuiRenderParams {
+            ui: &ui,
+            renderer: &mut self.renderer,
+            asset_manager,
+            loaded_images: &self.loaded_images,
+            ctx,
+        });
 
         let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);
         let draw_data = ui.render();
