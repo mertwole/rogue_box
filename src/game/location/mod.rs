@@ -128,7 +128,15 @@ impl Location {
         let cell = field.get_cell_mut(IVec2::new(2, 1)).unwrap();
         cell.build(Box::from(tb), Vec2::new(2.0, 1.0));
         // DEBUG CRAFT STATION
-        let craft_station = CraftStation::new();
+        let json_asset = AssetManager::get_asset_id("dictionaries/craft_stations.json");
+        let json = asset_manager.get_json(json_asset);
+        let craft_s = serde_json::from_str(json.as_ref()).unwrap();
+        let craft_s = crate::game::common::json_reader::JsonReader::read_vec(
+            &craft_s,
+            "craft_stations",
+            &mut false,
+        );
+        let craft_station = CraftStation::from_json_object(&craft_s[0], &item_factory);
         let cell = field.get_cell_mut(IVec2::new(4, 1)).unwrap();
         cell.build(Box::from(craft_station), Vec2::new(4.0, 1.0));
 
@@ -181,7 +189,7 @@ impl PhysicsSimulated for Location {
 }
 
 impl WithGui for Location {
-    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {
-        self.field.render_gui(ui, screen_size);
+    fn render_gui(&mut self, params: &mut GuiRenderParams) {
+        self.field.render_gui(params);
     }
 }

@@ -122,35 +122,26 @@ impl EventHandler for Game {
 
         self.render_all();
         self.renderer.render_to_screen(context, &self.asset_manager);
-        let (gui_width, gui_height) = ggez::graphics::drawable_size(context);
         self.gui
-            .render(context, &self.asset_manager, 1.0, |mut render_params| {
-                self.location
-                    .render_gui(render_params.ui, Vec2::new(gui_width, gui_height));
+            .render(context, &self.asset_manager, 1.0, |mut params| {
+                self.location.render_gui(&mut params);
 
                 imgui::Window::new("debug info")
                     .size([200.0, 100.0], imgui::Condition::Always)
                     .position_pivot([1.0, 0.0])
-                    .position([gui_width, 0.0], imgui::Condition::Always)
+                    .position([params.screen_size.x, 0.0], imgui::Condition::Always)
                     .flags(imgui::WindowFlags::NO_RESIZE | imgui::WindowFlags::NO_COLLAPSE)
-                    .build(&render_params.ui, || {
-                        render_params.ui.text(format!("tick id: {}", self.tick_id));
-                        render_params
+                    .build(&params.ui, || {
+                        params.ui.text(format!("tick id: {}", self.tick_id));
+                        params
                             .ui
                             .text(format!("from last tick: {}", self.from_last_tick));
-                        render_params
+                        params
                             .ui
                             .text(format!("avg frame time: {}", self.avg_frame_time));
-                        render_params
+                        params
                             .ui
                             .text(format!("avg fps: {}", 1.0 / self.avg_frame_time));
-                        imgui::Image::new(
-                            render_params.get_or_load_texture_id(AssetManager::get_asset_id(
-                                "textures/27.png",
-                            )),
-                            [50.0, 50.0],
-                        )
-                        .build(&render_params.ui)
                     });
             });
 

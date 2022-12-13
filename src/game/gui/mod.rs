@@ -15,7 +15,10 @@ use imgui_gfx_renderer::*;
 use std::collections::HashMap;
 use std::time::Instant;
 
-use super::common::asset_manager::{AssetId, AssetManager};
+use crate::game::common::{
+    asset_manager::{AssetId, AssetManager},
+    math::Vec2,
+};
 
 pub mod with_gui;
 
@@ -38,6 +41,7 @@ pub struct Gui {
 
 pub struct GuiRenderParams<'a> {
     pub ui: &'a Ui<'a>,
+    pub screen_size: Vec2,
     renderer: &'a mut Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     asset_manager: &'a AssetManager,
     loaded_images: &'a HashMap<AssetId, TextureId>,
@@ -66,6 +70,7 @@ impl GuiRenderParams<'_> {
 impl Gui {
     pub fn new(ctx: &mut Context) -> Self {
         let mut imgui = imgui::Context::create();
+        imgui.set_ini_filename(None);
         let (factory, gfx_device, _, _, _) = graphics::gfx_objects(ctx);
 
         let shaders = {
@@ -145,6 +150,7 @@ impl Gui {
 
         render_fn(GuiRenderParams {
             ui: &ui,
+            screen_size: Vec2::new(draw_width, draw_height),
             renderer: &mut self.renderer,
             asset_manager,
             loaded_images: &self.loaded_images,

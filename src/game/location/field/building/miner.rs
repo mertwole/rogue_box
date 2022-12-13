@@ -50,7 +50,7 @@ impl GameEntity for Miner {
 }
 
 impl WithGui for Miner {
-    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {}
+    fn render_gui(&mut self, params: &mut GuiRenderParams) {}
 }
 
 impl BuildingClone for Miner {

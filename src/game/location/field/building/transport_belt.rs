@@ -233,7 +233,7 @@ impl GameEntity for TransportBelt {
 }
 
 impl WithGui for TransportBelt {
-    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {}
+    fn render_gui(&mut self, params: &mut GuiRenderParams) {}
 }
 
 impl BuildingClone for TransportBelt {

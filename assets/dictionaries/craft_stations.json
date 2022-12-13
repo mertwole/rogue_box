@@ -1,0 +1,42 @@
+{
+    "craft_stations": [
+        {
+            "name": "basic",
+            "texture": "textures/buildings/building.png",
+            "recipes": [
+                {
+                    "inputs": [
+                        {
+                            "item": "iron",
+                            "amount": 10
+                        },
+                        {
+                            "item": "coal",
+                            "amount": 10
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "item": "copper",
+                            "amount": 5
+                        }
+                    ]
+                },
+                {
+                    "inputs": [
+                        {
+                            "item": "copper",
+                            "amount": 1
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "item": "iron",
+                            "amount": 50
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

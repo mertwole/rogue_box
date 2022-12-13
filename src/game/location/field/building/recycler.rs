@@ -203,7 +203,7 @@ impl GameEntity for Recycler {
 }
 
 impl WithGui for Recycler {
-    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {}
+    fn render_gui(&mut self, params: &mut GuiRenderParams) {}
 }
 
 impl BuildingClone for Recycler {

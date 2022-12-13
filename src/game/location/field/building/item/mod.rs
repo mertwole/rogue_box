@@ -5,8 +5,10 @@ use crate::game::common::math::Vec2;
 use crate::game::game_entity::*;
 use crate::game::renderer::{Renderer, Sprite};
 
+mod crafted_item;
 mod item_factory;
 mod transported_item;
+pub use crafted_item::*;
 pub use item_factory::*;
 pub use transported_item::*;
 

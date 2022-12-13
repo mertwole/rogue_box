@@ -70,9 +70,9 @@ impl GameEntity for Cell {
 }
 
 impl WithGui for Cell {
-    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {
+    fn render_gui(&mut self, params: &mut GuiRenderParams) {
         if let Some(building) = self.building.as_mut() {
-            building.render_gui(ui, screen_size);
+            building.render_gui(params);
         }
     }
 }

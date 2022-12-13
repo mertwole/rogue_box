@@ -240,9 +240,9 @@ impl PhysicsSimulated for Field {
 }
 
 impl WithGui for Field {
-    fn render_gui(&mut self, ui: &Ui, screen_size: Vec2) {
+    fn render_gui(&mut self, params: &mut GuiRenderParams) {
         for cell in self.into_iter() {
-            cell.render_gui(ui, screen_size);
+            cell.render_gui(params);
         }
     }
 }
