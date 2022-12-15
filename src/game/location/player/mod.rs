@@ -5,12 +5,15 @@ use ggez::Context;
 use crate::game::common::asset_manager::AssetManager;
 use crate::game::common::math::{Math, Vec2};
 use crate::game::game_entity::*;
+use crate::game::gui::with_gui::*;
 use crate::game::renderer::Sprite;
 
 use crate::game::location::physics_scene::{
-    collision_data::CollisionData, message as physics_message,
-    message::MessageBody as PhysicsMessageBody, BodyCollection, *,
+    message as physics_message, message::MessageBody as PhysicsMessageBody, BodyCollection, *,
 };
+
+mod inventory;
+use inventory::Inventory;
 
 pub struct Player {
     sprite: Sprite,
@@ -22,6 +25,8 @@ pub struct Player {
 
     velocity: Vec2,
     direction: Vec2,
+
+    inventory: Inventory,
 }
 
 impl Player {
@@ -47,6 +52,8 @@ impl Player {
 
             velocity: Vec2::zero(),
             direction: Vec2::zero(),
+
+            inventory: Inventory::new(8, 16),
         }
     }
 
@@ -138,5 +145,11 @@ impl PhysicsSimulated for Player {
 
     fn physics_update(&mut self, delta_time: f32) {
         self.apply_movement(delta_time);
+    }
+}
+
+impl WithGui for Player {
+    fn render_gui(&mut self, params: &mut GuiRenderParams) {
+        self.inventory.render_gui(params);
     }
 }

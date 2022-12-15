@@ -1,14 +1,14 @@
 extern crate serde_json;
 
-use crate::game::common::asset_manager::AssetManager;
-use crate::game::common::math::Vec2;
+use crate::game::common::{
+    asset_manager::{AssetId, AssetManager},
+    math::Vec2,
+};
 use crate::game::game_entity::*;
 use crate::game::renderer::{Renderer, Sprite};
 
-mod crafted_item;
 mod item_factory;
 mod transported_item;
-pub use crafted_item::*;
 pub use item_factory::*;
 pub use transported_item::*;
 
@@ -22,7 +22,8 @@ pub struct Item {
 }
 
 impl Item {
-    fn new_error() -> Item {
+    // DEBUG
+    pub fn new_error() -> Item {
         let texture = AssetManager::get_asset_id("error_fallbacks/texture.png");
         let sprite = Sprite::new(texture);
         Item {
@@ -69,5 +70,9 @@ impl Item {
 
     pub fn get_id(&self) -> ItemId {
         self.id
+    }
+
+    pub fn get_sprite_asset_id(&self) -> AssetId {
+        self.sprite.texture
     }
 }

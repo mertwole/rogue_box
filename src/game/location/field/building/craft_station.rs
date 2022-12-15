@@ -7,14 +7,14 @@ use crate::game::{
 };
 
 use super::{
-    item::{CraftedItem, ItemFactory},
+    item::{Item, ItemFactory},
     *,
 };
 
 #[derive(Clone)]
 struct CraftRecipe {
-    inputs: Vec<(CraftedItem, usize)>,
-    outputs: Vec<(CraftedItem, usize)>,
+    inputs: Vec<(Item, usize)>,
+    outputs: Vec<(Item, usize)>,
 }
 
 pub struct CraftStation {
@@ -45,12 +45,8 @@ impl CraftStation {
                     .into_iter()
                     .map(|input_json| {
                         (
-                            CraftedItem::new(item_factory.create_item(
-                                ItemFactory::get_item_id_by_name(&JsonReader::read_string(
-                                    &input_json,
-                                    "item",
-                                    error,
-                                )),
+                            item_factory.create_item(ItemFactory::get_item_id_by_name(
+                                &JsonReader::read_string(&input_json, "item", error),
                             )),
                             JsonReader::read_i32(&input_json, "amount", error) as usize,
                         )
@@ -60,12 +56,8 @@ impl CraftStation {
                     .into_iter()
                     .map(|output_json| {
                         (
-                            CraftedItem::new(item_factory.create_item(
-                                ItemFactory::get_item_id_by_name(&JsonReader::read_string(
-                                    &output_json,
-                                    "item",
-                                    error,
-                                )),
+                            item_factory.create_item(ItemFactory::get_item_id_by_name(
+                                &JsonReader::read_string(&output_json, "item", error),
                             )),
                             JsonReader::read_i32(&output_json, "amount", error) as usize,
                         )

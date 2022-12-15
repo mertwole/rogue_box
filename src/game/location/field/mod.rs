@@ -244,6 +244,7 @@ impl WithGui for Field {
         for cell in self.into_iter() {
             cell.render_gui(params);
         }
+        self.player.render_gui(params);
     }
 }
 
