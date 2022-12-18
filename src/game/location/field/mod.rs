@@ -27,14 +27,15 @@ pub struct Field {
     min_coord: IVec2,
     max_coord: IVec2,
     cells: Vec<Vec<Cell>>,
-    player: Player,
+    // DEBUG
+    pub player: Player,
     laying_objects: Vec<LayingObject>,
 }
 
 impl Field {
     pub fn new(min_coord: IVec2, max_coord: IVec2) -> Field {
-        let x_count = (max_coord.x - min_coord.x) as usize;
-        let y_count = (max_coord.y - min_coord.y) as usize;
+        let x_count = (max_coord.x - min_coord.x + 1) as usize;
+        let y_count = (max_coord.y - min_coord.y + 1) as usize;
         let mut cells = Vec::with_capacity(x_count);
         for _ in 0..x_count {
             let mut cells_row = Vec::with_capacity(y_count);
@@ -85,10 +86,8 @@ impl Field {
 
 impl GameEntity for Field {
     fn update(&mut self, parameters: &UpdateParameters) {
-        for cell_column in &mut self.cells {
-            for cell in cell_column {
-                cell.update(parameters);
-            }
+        for cell in self.iter_mut() {
+            cell.update(parameters);
         }
 
         for laying_obj in &mut self.laying_objects {
@@ -99,11 +98,8 @@ impl GameEntity for Field {
     }
 
     fn tick(&mut self, tick_id: u32) {
-        for x in self.min_coord.x..self.max_coord.x {
-            for y in self.min_coord.y..self.max_coord.y {
-                let cell = self.get_cell_mut_unchecked(IVec2::new(x, y));
-                cell.tick(tick_id);
-            }
+        for cell in self.iter_mut() {
+            cell.tick(tick_id);
         }
 
         for laying_obj in &mut self.laying_objects {
@@ -126,8 +122,8 @@ impl GameEntity for Field {
         max_visible_cell.x = Math::min(max_visible_cell.x, self.max_coord.x);
         max_visible_cell.y = Math::min(max_visible_cell.y, self.max_coord.y);
 
-        for x in min_visible_cell.x..max_visible_cell.x {
-            for y in min_visible_cell.y..max_visible_cell.y {
+        for x in min_visible_cell.x..=max_visible_cell.x {
+            for y in min_visible_cell.y..=max_visible_cell.y {
                 let cell_pos = IVec2::new(x as isize, y as isize);
                 let cell_transform = SpriteTransform::default().add_translation(cell_pos.to_vec2());
                 let cell_index = cell_pos - self.min_coord;
@@ -224,13 +220,13 @@ impl PhysicsSimulated for Field {
         self.player
             .handle_physics_messages(messages.nested.pop().unwrap());
         let mut cell_messages = messages.nested.into_iter().rev();
-        for cell in self.into_iter() {
+        for cell in self.iter_mut() {
             cell.handle_physics_messages(cell_messages.next().unwrap());
         }
     }
 
     fn physics_update(&mut self, delta_time: f32) {
-        self.into_iter()
+        self.iter_mut()
             .for_each(|cell| cell.physics_update(delta_time));
         self.laying_objects
             .iter_mut()
@@ -241,94 +237,19 @@ impl PhysicsSimulated for Field {
 
 impl WithGui for Field {
     fn render_gui(&mut self, params: &mut GuiRenderParams) {
-        for cell in self.into_iter() {
+        for cell in self.iter_mut() {
             cell.render_gui(params);
         }
         self.player.render_gui(params);
     }
 }
 
-pub struct Iter<'a, Cell> {
-    cells: &'a Vec<Vec<Cell>>,
-    size: IVec2,
-    curr: IVec2,
-}
-
-impl<'a, Cell> Iterator for Iter<'a, Cell> {
-    type Item = &'a Cell;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.curr.x >= self.size.x - 1 {
-            if self.curr.y >= self.size.y - 1 {
-                None
-            } else {
-                let cell = Some(&self.cells[self.curr.y as usize][self.curr.x as usize]);
-                self.curr.y += 1;
-                self.curr.x = 0;
-                cell
-            }
-        } else {
-            let cell = Some(&self.cells[self.curr.y as usize][self.curr.x as usize]);
-            self.curr.x += 1;
-            cell
-        }
+impl<'a> Field {
+    pub fn iter(&'a self) -> std::iter::Flatten<core::slice::Iter<'a, Vec<Cell>>> {
+        self.cells.iter().flatten()
     }
-}
 
-impl<'a> IntoIterator for &'a Field {
-    type Item = &'a Cell;
-    type IntoIter = Iter<'a, Cell>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        Iter {
-            cells: &self.cells,
-            size: self.max_coord - self.min_coord,
-            curr: IVec2::zero(),
-        }
-    }
-}
-
-pub struct IterMut<'a, Cell> {
-    cells: &'a mut Vec<Vec<Cell>>,
-    size: IVec2,
-    curr: IVec2,
-}
-
-// TODO : remove unsafe
-impl<'a, Cell> Iterator for IterMut<'a, Cell> {
-    type Item = &'a mut Cell;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.curr.x >= self.size.x - 1 {
-            if self.curr.y >= self.size.y - 1 {
-                None
-            } else {
-                let cell = unsafe {
-                    std::mem::transmute(&mut self.cells[self.curr.y as usize][self.curr.x as usize])
-                };
-                self.curr.y += 1;
-                self.curr.x = 0;
-                Some(cell)
-            }
-        } else {
-            let cell = unsafe {
-                std::mem::transmute(&mut self.cells[self.curr.y as usize][self.curr.x as usize])
-            };
-            self.curr.x += 1;
-            Some(cell)
-        }
-    }
-}
-
-impl<'a> IntoIterator for &'a mut Field {
-    type Item = &'a mut Cell;
-    type IntoIter = IterMut<'a, Cell>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        IterMut {
-            cells: &mut self.cells,
-            size: self.max_coord - self.min_coord,
-            curr: IVec2::zero(),
-        }
+    pub fn iter_mut(&'a mut self) -> std::iter::Flatten<core::slice::IterMut<'a, Vec<Cell>>> {
+        self.cells.iter_mut().flatten()
     }
 }

@@ -120,6 +120,9 @@ impl EventHandler for Game {
     fn draw(&mut self, context: &mut Context) -> GameResult<()> {
         graphics::clear(context, Color::WHITE);
 
+        let camera_properties = self.location.get_camera_properties();
+        self.renderer.set_camera_properties(camera_properties);
+
         self.render_all();
         self.renderer.render_to_screen(context, &self.asset_manager);
         self.gui
@@ -185,6 +188,9 @@ impl EventHandler for Game {
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
+        self.renderer
+            .set_resolution(IVec2::new(width as isize, height as isize));
+
         graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height))
             .unwrap();
     }

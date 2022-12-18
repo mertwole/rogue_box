@@ -12,6 +12,8 @@ use camera::*;
 pub use sprite::Sprite;
 pub use sprite_transform::SpriteTransform;
 
+use super::common::math::IVec2;
+
 pub struct Renderer {
     queued_sprites: Vec<(Sprite, SpriteTransform)>,
     camera: Camera,
@@ -23,6 +25,14 @@ impl Renderer {
             queued_sprites: Vec::new(),
             camera,
         }
+    }
+
+    pub fn set_camera_properties(&mut self, properties: CameraProperties) {
+        self.camera.set_properties(properties);
+    }
+
+    pub fn set_resolution(&mut self, resolution: IVec2) {
+        self.camera.set_resolution(resolution);
     }
 
     pub fn queue_render_sprite(&mut self, sprite: Sprite, transform: SpriteTransform) {

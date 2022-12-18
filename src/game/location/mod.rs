@@ -17,20 +17,23 @@ use field::{
 };
 use physics_scene::{BodyCollection, BodyHierarchyRoot, PhysicsSimulated};
 
+use super::renderer::camera::CameraProperties;
+
 pub struct Location {
     field: Field,
+    camera_properties: CameraProperties,
 }
 
 impl Location {
     pub fn new(asset_manager: &AssetManager) -> Location {
-        let mut field = Field::new(IVec2::new(-100, -100), IVec2::new(100, 100));
+        let mut field = Field::new(IVec2::new(-5, -5), IVec2::new(5, 5));
 
         let surface_json = AssetManager::get_asset_id("dictionaries/surfaces.json");
         let surface_dict = asset_manager.get_json(surface_json);
         let surface_factory = SurfaceFactory::new(surface_dict);
         let grass_surface_id = SurfaceFactory::get_surface_id_by_name("grass");
 
-        for cell in &mut field {
+        for cell in &mut field.iter_mut() {
             let grass_surface = surface_factory.create_surface(grass_surface_id);
             *cell = Cell::new(grass_surface);
         }
@@ -140,12 +143,21 @@ impl Location {
         let cell = field.get_cell_mut(IVec2::new(4, 1)).unwrap();
         cell.build(Box::from(craft_station), Vec2::new(4.0, 1.0));
 
-        Location { field }
+        Location {
+            field,
+            camera_properties: CameraProperties::default(),
+        }
     }
 
     // TODO : IT'S DEBUG
     pub fn process_keyboard_input(&mut self, context: &Context) {
         self.field.process_keyboard_input(context);
+    }
+
+    pub fn get_camera_properties(&self) -> CameraProperties {
+        let mut props = self.camera_properties.clone();
+        props.offset = self.field.player.body.get_position();
+        props
     }
 }
 
